@@ -32,3 +32,7 @@ go build -o otelstarter ./cmd/otelstarter
 - [Domain events](docs/DOMAIN_EVENTS.md): the business event model
 - [Architecture decision records](docs/adr/)
 - [Contributing](CONTRIBUTING.md)
+
+## License
+
+[Apache License 2.0](LICENSE)
