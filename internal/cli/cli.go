@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"strings"
 )
 
 // Exit codes follow the common Unix convention: 2 means the user typed the
@@ -27,18 +28,20 @@ var Version = "dev"
 
 type command struct {
 	name    string
+	args    string // positional arguments shown in help, e.g. "[path]"
+	maxArgs int
 	summary string
-	run     func(stdout io.Writer) error
+	run     func(args []string, stdout io.Writer) error
 }
 
 // commands is a slice, not a map, so help output keeps this order.
 var commands = []command{
-	{"init", "Add OpenTelemetry configuration to the current project", notImplemented("init", "Phase 4")},
-	{"analyze", "Detect the project's language, framework and dependencies", notImplemented("analyze", "Phase 2")},
-	{"run", "Start a local collector and observability backend", notImplemented("run", "Phase 6")},
-	{"validate", "Check that the generated configuration works", notImplemented("validate", "Phase 7")},
-	{"doctor", "Diagnose common setup problems and suggest fixes", notImplemented("doctor", "Phase 7")},
-	{"version", "Print the otelstarter version", printVersion},
+	{"init", "", 0, "Add OpenTelemetry configuration to the current project", notImplemented("init", "Phase 4")},
+	{"analyze", "[path]", 1, "Detect the project's language, framework and dependencies", analyze},
+	{"run", "", 0, "Start a local collector and observability backend", notImplemented("run", "Phase 6")},
+	{"validate", "", 0, "Check that the generated configuration works", notImplemented("validate", "Phase 7")},
+	{"doctor", "", 0, "Diagnose common setup problems and suggest fixes", notImplemented("doctor", "Phase 7")},
+	{"version", "", 0, "Print the otelstarter version", printVersion},
 }
 
 // Run executes the CLI and returns the process exit code. It takes its
@@ -62,11 +65,11 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	// No command takes flags yet; parsing still gives every command --help
-	// and rejects stray arguments instead of silently ignoring them.
+	// and rejects unknown flags and extra arguments instead of ignoring them.
 	flags := flag.NewFlagSet(cmd.name, flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: otelstarter %s\n\n%s.\n", cmd.name, cmd.summary)
+		fmt.Fprintf(stderr, "Usage: otelstarter %s\n\n%s.\n", strings.TrimSpace(cmd.name+" "+cmd.args), cmd.summary)
 	}
 	if err := flags.Parse(args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -74,12 +77,13 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		}
 		return exitUsage
 	}
-	if flags.NArg() > 0 {
-		fmt.Fprintf(stderr, "otelstarter %s takes no arguments, got %q.\n", cmd.name, flags.Arg(0))
+	if flags.NArg() > cmd.maxArgs {
+		fmt.Fprintf(stderr, "Too many arguments for otelstarter %s: unexpected %q.\n\nRun 'otelstarter %s --help' for usage.\n",
+			cmd.name, flags.Arg(cmd.maxArgs), cmd.name)
 		return exitUsage
 	}
 
-	if err := cmd.run(stdout); err != nil {
+	if err := cmd.run(flags.Args(), stdout); err != nil {
 		fmt.Fprintf(stderr, "Error: %v\n", err)
 		return exitError
 	}
@@ -109,15 +113,15 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Run 'otelstarter <command> --help' for details on a command.")
 }
 
-func printVersion(stdout io.Writer) error {
+func printVersion(_ []string, stdout io.Writer) error {
 	fmt.Fprintf(stdout, "otelstarter %s (%s, %s/%s)\n", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	return nil
 }
 
 // notImplemented returns a placeholder handler so every MVP command is
 // discoverable now and fails with a clear message until it is built.
-func notImplemented(name, phase string) func(io.Writer) error {
-	return func(io.Writer) error {
+func notImplemented(name, phase string) func([]string, io.Writer) error {
+	return func([]string, io.Writer) error {
 		return fmt.Errorf("'otelstarter %s' is not implemented yet. It is planned for %s of the MVP", name, phase)
 	}
 }

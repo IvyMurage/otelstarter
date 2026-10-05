@@ -6,4 +6,5 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `otelstarter analyze [path]`: detects Python, Node.js and Go projects. For Python it reports the package manager, framework (FastAPI, Flask, Django), observability-relevant dependencies and installed OpenTelemetry packages.
 - CLI skeleton with `init`, `analyze`, `run`, `validate`, `doctor` and `version` commands. Only `version` and `help` work so far.
