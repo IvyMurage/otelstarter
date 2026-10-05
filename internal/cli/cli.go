@@ -52,8 +52,8 @@ var commands = []command{
 	{"init", "[path]", "Add OpenTelemetry configuration to the project", runInit},
 	{"analyze", "[path]", "Detect the project's language, framework and dependencies", runAnalyze},
 	{"run", "[-- <app start command>]", "Start a local Collector and Grafana, and optionally your app", runRun},
-	{"validate", "", "Check that the generated configuration works", notImplemented("Phase 7")},
-	{"doctor", "", "Diagnose common setup problems and suggest fixes", notImplemented("Phase 7")},
+	{"validate", "[path]", "Check the OpenTelemetry setup; exit code 1 on problems", runValidate},
+	{"doctor", "[path]", "Run the checks and print an environment report for troubleshooting", runDoctor},
 	{"version", "", "Print the otelstarter version", runVersion},
 }
 
@@ -91,6 +91,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return exitOK
 	case errors.Is(err, errUsage):
 		return exitUsage
+	case errors.As(err, new(problemsFound)):
+		return exitError // the checklist already explained every problem
 	default:
 		fmt.Fprintf(stderr, "Error: %v\n", err)
 		return exitError
@@ -143,15 +145,4 @@ func runVersion(fs *flag.FlagSet, args []string, s streams) error {
 	}
 	fmt.Fprintf(s.stdout, "otelstarter %s (%s, %s/%s)\n", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	return nil
-}
-
-// notImplemented returns a placeholder handler so every MVP command is
-// discoverable now and fails with a clear message until it is built.
-func notImplemented(phase string) func(*flag.FlagSet, []string, streams) error {
-	return func(fs *flag.FlagSet, args []string, _ streams) error {
-		if _, err := parseArgs(fs, args, 0); err != nil {
-			return err
-		}
-		return fmt.Errorf("'otelstarter %s' is not implemented yet. It is planned for %s of the MVP", fs.Name(), phase)
-	}
 }

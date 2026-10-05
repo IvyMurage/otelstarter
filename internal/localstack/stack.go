@@ -193,3 +193,45 @@ func waitUntilReady(ctx context.Context, url string) error {
 		}
 	}
 }
+
+// PortInUse reports whether another program is listening on the port.
+func PortInUse(p Port) bool {
+	return CheckPortsFree([]Port{p}) != nil
+}
+
+// Running reports whether the otelstarter stack's Collector is up.
+func Running(ctx context.Context) bool {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, collectorHealthURL, nil)
+	if err != nil {
+		return false
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
+}
+
+// DockerVersions returns the Docker server and Compose versions, or a short
+// explanation in place of each when it cannot be found.
+func DockerVersions(ctx context.Context) (docker, compose string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if _, err := exec.LookPath("docker"); err != nil {
+		return "not installed", "not installed"
+	}
+	docker = commandOutput(ctx, "not running", "docker", "version", "--format", "{{.Server.Version}}")
+	compose = commandOutput(ctx, "not available", "docker", "compose", "version", "--short")
+	return docker, compose
+}
+
+func commandOutput(ctx context.Context, fallback, name string, args ...string) string {
+	out, err := exec.CommandContext(ctx, name, args...).Output()
+	if err != nil || strings.TrimSpace(string(out)) == "" {
+		return fallback
+	}
+	return strings.TrimSpace(string(out))
+}
