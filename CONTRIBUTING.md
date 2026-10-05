@@ -1,0 +1,44 @@
+# Contributing to OTelStarter
+
+Read [docs/ENGINEERING_GUIDELINES.md](docs/ENGINEERING_GUIDELINES.md) first. It is mandatory for humans and AI agents.
+
+## Development setup
+
+Install Go 1.24 or newer from <https://go.dev/dl/>.
+
+```bash
+go build ./...                       # compile everything
+go run ./cmd/otelstarter help        # run the CLI without installing it
+```
+
+## Before opening a pull request
+
+Run all three checks. CI runs the same checks.
+
+```bash
+gofmt -l .                # lists badly formatted files; must print nothing
+go vet ./...              # catches common mistakes
+go test -race ./...       # runs the tests and checks for data races
+```
+
+`gofmt -w .` fixes formatting for you.
+
+## Layout
+
+| Path | What lives there |
+|------|------------------|
+| `cmd/otelstarter/` | The `main` package. One line that calls `internal/cli`. |
+| `internal/cli/` | Argument parsing and command dispatch. No business logic. |
+| `docs/` | Architecture, requirements, guidelines, ADRs. |
+
+Go only allows code inside `internal/` to be imported by this module, so nothing there is a public API.
+
+New packages are added when a feature needs them, not ahead of time. The planned order is in [docs/adr/0001-write-the-cli-in-go.md](docs/adr/0001-write-the-cli-in-go.md).
+
+## Tests
+
+Tests live next to the code they test, in `*_test.go` files. That is the Go convention. Test behaviour (exit codes, output) rather than internals.
+
+## Pull requests
+
+Keep each PR to one purpose. Answer the questions in section 37 of the engineering guidelines in the PR description.
