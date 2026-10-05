@@ -24,3 +24,18 @@ jobs:
         run: go test -race ./...
       - name: Build
         run: go build ./cmd/otelstarter
+
+  # Validates the local stack's files with the real tools, so a config the
+  # Collector or Compose would reject never ships.
+  local-stack-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Collector config
+        run: >
+          docker run --rm
+          -v "$PWD/internal/localstack/files/collector.yaml:/config.yaml:ro"
+          otel/opentelemetry-collector:0.162.0
+          validate --config=/config.yaml
+      - name: Validate Compose file
+        run: docker compose -f internal/localstack/files/compose.yaml config --quiet

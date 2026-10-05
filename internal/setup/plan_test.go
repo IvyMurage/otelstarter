@@ -37,7 +37,7 @@ func TestBuildPlan(t *testing.T) {
 			files:        map[string]string{"requirements.txt": "fastapi\n"},
 			wantChanges:  []string{"create otel.env", "update requirements.txt"},
 			wantCommand:  "pip install -r requirements.txt",
-			wantStartCmd: "set -a && . ./otel.env && set +a && opentelemetry-instrument uvicorn main:app",
+			wantStartCmd: "otelstarter run -- uvicorn main:app",
 		},
 		{
 			name:        "uv project gets otel.env and a uv add command, pyproject untouched",

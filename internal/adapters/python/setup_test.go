@@ -92,3 +92,31 @@ func TestRequirementsBlockIsReadBackAsInstalled(t *testing.T) {
 		}
 	}
 }
+
+func TestWrapCommand(t *testing.T) {
+	tests := []struct {
+		in          []string
+		want        []string
+		wantWrapped bool
+	}{
+		{[]string{"uvicorn", "main:app"}, []string{"opentelemetry-instrument", "uvicorn", "main:app"}, true},
+		{[]string{"opentelemetry-instrument", "flask", "run"}, []string{"opentelemetry-instrument", "flask", "run"}, false},
+		{[]string{"uv", "run", "opentelemetry-instrument", "uvicorn"}, []string{"uv", "run", "opentelemetry-instrument", "uvicorn"}, false},
+		{[]string{".venv/bin/opentelemetry-instrument", "python", "app.py"}, []string{".venv/bin/opentelemetry-instrument", "python", "app.py"}, false},
+	}
+	for _, tt := range tests {
+		got, wrapped := WrapCommand(tt.in)
+		if !reflect.DeepEqual(got, tt.want) || wrapped != tt.wantWrapped {
+			t.Errorf("WrapCommand(%q) = %q, %v; want %q, %v", tt.in, got, wrapped, tt.want, tt.wantWrapped)
+		}
+	}
+}
+
+func TestEnvVarsAvoidDeprecatedLoggingSwitch(t *testing.T) {
+	for _, v := range EnvVars {
+		if v.Name == "OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED" {
+			t.Error("OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED is deprecated and stops " +
+				"opentelemetry-instrumentation-logging from installing its own log handler")
+		}
+	}
+}

@@ -1,6 +1,7 @@
 package python
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/IvyMurage/otelstarter/internal/project"
@@ -23,12 +24,12 @@ const (
 )
 
 // EnvVars are the Python-specific settings for otel.env.
+//
+// Log export needs no setting: opentelemetry-instrumentation-logging installs
+// the OpenTelemetry log handler itself. The older
+// OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED switch is deprecated, and
+// setting it makes that instrumentation skip its own handler.
 var EnvVars = []project.EnvVar{
-	{
-		Name:    "OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED",
-		Value:   "true",
-		Comment: "Send Python log records through OpenTelemetry.",
-	},
 	{
 		Name:    "OTEL_PYTHON_LOG_CORRELATION",
 		Value:   "true",
@@ -96,4 +97,17 @@ func AddToRequirements(existing string, reqs []string) string {
 		existing += "\n"
 	}
 	return existing + blockStart + "\n" + lines + blockEnd + "\n"
+}
+
+// WrapCommand puts opentelemetry-instrument in front of the user's start
+// command, unless it is already there (for example
+// "uv run opentelemetry-instrument uvicorn main:app"). The second result
+// reports whether it was added.
+func WrapCommand(command []string) ([]string, bool) {
+	for _, arg := range command {
+		if filepath.Base(arg) == "opentelemetry-instrument" {
+			return command, false
+		}
+	}
+	return append([]string{"opentelemetry-instrument"}, command...), true
 }

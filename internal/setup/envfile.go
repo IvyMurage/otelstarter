@@ -1,6 +1,11 @@
 package setup
 
 import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/IvyMurage/otelstarter/internal/project"
@@ -60,4 +65,47 @@ func sanitizeServiceName(s string) string {
 	// Collapse runs of '-' and trim them from the ends.
 	parts := strings.FieldsFunc(b.String(), func(r rune) bool { return r == '-' })
 	return strings.Join(parts, "-")
+}
+
+// ReadEnvFile reads otel.env from dir and returns its settings as
+// "NAME=value" strings, the form os/exec expects. Blank lines and lines
+// starting with '#' are skipped. Values are taken literally: no quotes or
+// variable expansion, matching what renderEnvFile writes.
+func ReadEnvFile(dir string) ([]string, error) {
+	path := filepath.Join(dir, EnvFileName)
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("%s not found in %s. Run otelstarter init first", EnvFileName, dir)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot read %s: %w", path, err)
+	}
+
+	var vars []string
+	for i, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		name, _, ok := strings.Cut(line, "=")
+		if !ok || !validEnvName(name) {
+			return nil, fmt.Errorf("%s line %d is not NAME=value: %q. Fix or remove that line", EnvFileName, i+1, line)
+		}
+		vars = append(vars, line)
+	}
+	return vars, nil
+}
+
+func validEnvName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for i, r := range name {
+		letter := r == '_' || (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z')
+		digit := r >= '0' && r <= '9'
+		if !letter && !(digit && i > 0) {
+			return false
+		}
+	}
+	return true
 }

@@ -83,7 +83,7 @@ func printPlan(w io.Writer, plan setup.Plan) {
 			fmt.Fprintf(w, "  %s\n", cmd)
 		}
 		fmt.Fprintf(w, "  %s\n", plan.StartCommand)
-		fmt.Fprintln(w, "  (replace the start command at the end with your own)")
+		fmt.Fprintln(w, "  (replace the command after -- with your own; run starts a local Collector and Grafana first)")
 	}
 
 	if len(plan.Notes) > 0 {

@@ -84,9 +84,10 @@ func buildPlan(path string, fsys fs.FS) (Plan, error) {
 	}
 
 	plan := Plan{
-		Path:         path,
-		Description:  describe(lang),
-		StartCommand: "set -a && . ./" + EnvFileName + " && set +a && " + lang.Activation,
+		Path:        path,
+		Description: describe(lang),
+		// otelstarter run loads otel.env and adds opentelemetry-instrument itself.
+		StartCommand: "otelstarter run -- " + strings.TrimPrefix(lang.Activation, "opentelemetry-instrument "),
 		Notes:        lang.Notes,
 	}
 	for _, other := range proj.Languages {

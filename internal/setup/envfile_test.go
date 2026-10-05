@@ -1,6 +1,8 @@
 package setup
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -49,5 +51,50 @@ func TestRenderEnvFile(t *testing.T) {
 		if !valid.MatchString(line) {
 			t.Errorf("line %q is not a comment, blank, or plain NAME=value", line)
 		}
+	}
+}
+
+func TestReadEnvFileReadsWhatRenderWrites(t *testing.T) {
+	dir := t.TempDir()
+	content := renderEnvFile("shop", []project.EnvVar{{Name: "EXTRA", Value: "1", Comment: "Extra."}})
+	if err := os.WriteFile(filepath.Join(dir, EnvFileName), content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	vars, err := ReadEnvFile(dir)
+	if err != nil {
+		t.Fatalf("ReadEnvFile() error = %v", err)
+	}
+	want := []string{
+		"OTEL_SERVICE_NAME=shop",
+		"OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=local",
+		"OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318",
+		"OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf",
+		"EXTRA=1",
+	}
+	if strings.Join(vars, "\n") != strings.Join(want, "\n") {
+		t.Errorf("ReadEnvFile() =\n%v\nwant\n%v", vars, want)
+	}
+}
+
+func TestReadEnvFileErrors(t *testing.T) {
+	tests := map[string]string{
+		"missing file":     "",
+		"line without =":   "OTEL_SERVICE_NAME\n",
+		"invalid name":     "1BAD=x\n",
+		"name with spaces": "MY VAR=x\n",
+	}
+	for name, content := range tests {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			if content != "" {
+				if err := os.WriteFile(filepath.Join(dir, EnvFileName), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if _, err := ReadEnvFile(dir); err == nil {
+				t.Error("ReadEnvFile() = nil error, want an error")
+			}
+		})
 	}
 }
