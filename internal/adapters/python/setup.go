@@ -111,3 +111,10 @@ func WrapCommand(command []string) ([]string, bool) {
 	}
 	return append([]string{"opentelemetry-instrument"}, command...), true
 }
+
+// Essential reports whether a package is required for any telemetry to be
+// sent. Missing instrumentation for one library only loses that library's
+// spans; missing these loses everything.
+func Essential(pkg string) bool {
+	return pkg == "opentelemetry-distro" || pkg == "opentelemetry-exporter-otlp-proto-http"
+}

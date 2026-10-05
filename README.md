@@ -18,9 +18,9 @@ Early development. Working commands:
 - `otelstarter analyze`: detect a project's language, framework and dependencies, and recommend OpenTelemetry instrumentation ([docs](docs/analyze.md)). Full detection for Python; Node.js and Go are recognised but not analysed yet.
 - `otelstarter init`: add OpenTelemetry to a Python project ([docs](docs/init.md)).
 - `otelstarter run`: start a local Collector and Grafana, and optionally your app ([docs](docs/run.md)).
+- `otelstarter validate` and `otelstarter doctor`: check the setup and explain how to fix problems ([docs](docs/validate.md)).
 - `otelstarter version` and `otelstarter help`.
 
-The other commands print "not implemented yet".
 
 ## Build from source
 

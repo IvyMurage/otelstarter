@@ -38,6 +38,7 @@ OTELSTARTER_DOCKER_TESTS=1 go test ./internal/localstack/
 | `internal/project/` | Language-neutral description of an analysed project. |
 | `internal/detect/` | Finds which languages a project uses and calls their adapter. |
 | `internal/adapters/python/` | Reads Python manifests, recommends instrumentation, and knows how Python projects add packages. |
+| `internal/check/` | The checks behind `validate` and `doctor`. Read-only. |
 | `internal/localstack/` | The local Collector + Grafana stack for `run`. The only package that runs Docker. Its config files are in `files/` and embedded in the binary. |
 | `internal/setup/` | Builds and applies the file changes for `init`. The only package that writes to a user's project. |
 | `docs/` | Architecture, requirements, guidelines, ADRs. |
