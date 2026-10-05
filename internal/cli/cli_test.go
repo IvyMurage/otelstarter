@@ -24,7 +24,7 @@ func TestRun(t *testing.T) {
 		{"command --help", []string{"version", "--help"}, exitOK, "", "Usage: otelstarter version"},
 		{"unknown flag", []string{"version", "--bogus"}, exitUsage, "", "flag provided but not defined"},
 		{"stray argument", []string{"version", "extra"}, exitUsage, "", `Too many arguments for otelstarter version: unexpected "extra"`},
-		{"unimplemented command", []string{"run"}, exitError, "", "not implemented yet"},
+		{"unimplemented command", []string{"doctor"}, exitError, "", "not implemented yet"},
 		{"analyze with two paths", []string{"analyze", "a", "b"}, exitUsage, "", `unexpected "b"`},
 	}
 

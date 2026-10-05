@@ -6,7 +6,7 @@
 
 1. It creates **`otel.env`**, a file of standard OpenTelemetry settings: service name, environment, Collector endpoint and log correlation.
 2. It adds the **instrumentation packages** that [`otelstarter analyze`](analyze.md) recommends, pinned to versions otelstarter has tested together.
-3. It prints the **start command** that turns instrumentation on, with no code changes.
+3. It prints the **start command**, `otelstarter run -- <your command>`, which starts a local Collector and Grafana and then your app with instrumentation on, with no code changes.
 
 It shows every change first and asks before writing anything.
 
@@ -47,8 +47,8 @@ requirements.txt (lines added):
 
 Then run:
   pip install -r requirements.txt
-  set -a && . ./otel.env && set +a && opentelemetry-instrument uvicorn main:app
-  (replace the start command at the end with your own)
+  otelstarter run -- uvicorn main:app
+  (replace the command after -- with your own; run starts a local Collector and Grafana first)
 
 Apply these changes? [y/N]
 ```
@@ -84,7 +84,6 @@ opentelemetry-distro==0.66b0
 | `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment.name=local` | Where the service runs |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | The Collector that receives the telemetry |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Matches the HTTP exporter that `init` installs |
-| `OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED` | `true` | Sends Python log records through OpenTelemetry |
 | `OTEL_PYTHON_LOG_CORRELATION` | `true` | Adds `trace_id` and `span_id` to log messages |
 
 Edit it freely. `init` never overwrites an existing `otel.env`. To regenerate it, delete it and run `init` again.
@@ -106,10 +105,9 @@ OpenTelemetry's Python packages require each other at exact versions, so otelsta
 ## Limitations
 
 - Python only for now. Node.js and Go projects get a clear error.
-- **Start the app with `otel.env` loaded.** Without it, the SDK looks for the gRPC exporter, which is not installed. The app keeps working, but OpenTelemetry prints `Configuration of configurator failed` and sends nothing.
+- **Start the app with `otel.env` loaded.** [`otelstarter run -- <command>`](run.md) does this for you. Without Docker, load it yourself: `set -a && . ./otel.env && set +a && opentelemetry-instrument <command>`. Without `otel.env`, the SDK looks for the gRPC exporter, which is not installed. The app keeps working, but OpenTelemetry prints `Configuration of configurator failed` and sends nothing.
 - `init` does not install packages or run your package manager. You run the printed command.
 - A project whose dependencies live only in `setup.py` gets a `pip install …` command. Add the packages to your dependency list yourself.
-- Nothing receives telemetry until a Collector runs at the endpoint. `otelstarter run` (planned) will start one locally.
 
 ## Security and privacy
 

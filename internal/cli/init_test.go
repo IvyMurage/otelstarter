@@ -38,7 +38,7 @@ func TestInitDryRunWritesNothing(t *testing.T) {
 		"  | OTEL_SERVICE_NAME=",
 		"  | opentelemetry-instrumentation-fastapi==",
 		"pip install -r requirements.txt",
-		"opentelemetry-instrument uvicorn main:app",
+		"otelstarter run -- uvicorn main:app",
 		"Dry run: no files were changed.",
 	} {
 		assertContains(t, "stdout", stdout, want)

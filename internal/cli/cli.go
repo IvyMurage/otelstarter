@@ -51,7 +51,7 @@ type command struct {
 var commands = []command{
 	{"init", "[path]", "Add OpenTelemetry configuration to the project", runInit},
 	{"analyze", "[path]", "Detect the project's language, framework and dependencies", runAnalyze},
-	{"run", "", "Start a local collector and observability backend", notImplemented("Phase 6")},
+	{"run", "[-- <app start command>]", "Start a local Collector and Grafana, and optionally your app", runRun},
 	{"validate", "", "Check that the generated configuration works", notImplemented("Phase 7")},
 	{"doctor", "", "Diagnose common setup problems and suggest fixes", notImplemented("Phase 7")},
 	{"version", "", "Print the otelstarter version", runVersion},
