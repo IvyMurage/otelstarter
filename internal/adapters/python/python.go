@@ -24,39 +24,46 @@ var Manifests = []string{"pyproject.toml", "requirements.txt", "Pipfile", "setup
 // manifests are a few kilobytes.
 const maxManifestSize = 1 << 20 // 1 MiB
 
-var frameworks = map[string]string{
-	"fastapi": "FastAPI",
-	"flask":   "Flask",
-	"django":  "Django",
+// knownPackage describes a Python package that matters for observability.
+type knownPackage struct {
+	framework       string // display name when the package is a web framework
+	category        string // dependency category when it is not, e.g. "PostgreSQL"
+	instrumentation string // official OpenTelemetry package; empty when none exists
 }
 
-// dependencyCategories maps normalised package names to what they are.
-// Only list packages whose category is certain: SQLAlchemy is an ORM, but it
-// does not tell us which database sits behind it.
-var dependencyCategories = map[string]string{
-	"psycopg":                "PostgreSQL",
-	"psycopg-binary":         "PostgreSQL",
-	"psycopg2":               "PostgreSQL",
-	"psycopg2-binary":        "PostgreSQL",
-	"asyncpg":                "PostgreSQL",
-	"pymysql":                "MySQL",
-	"mysqlclient":            "MySQL",
-	"mysql-connector-python": "MySQL",
-	"aiomysql":               "MySQL",
-	"redis":                  "Redis",
-	"kafka-python":           "Kafka",
-	"confluent-kafka":        "Kafka",
-	"aiokafka":               "Kafka",
-	"pika":                   "RabbitMQ",
-	"aio-pika":               "RabbitMQ",
-	"requests":               "HTTP client",
-	"httpx":                  "HTTP client",
-	"aiohttp":                "HTTP client",
-	"sqlalchemy":             "ORM",
-	"sqlmodel":               "ORM",
-	"tortoise-orm":           "ORM",
-	"peewee":                 "ORM",
-	"celery":                 "Task queue",
+// knownPackages is keyed by normalised package name. Only list packages
+// whose category is certain: SQLAlchemy is an ORM, but it does not tell us
+// which database sits behind it.
+//
+// Only instrumentation published by the OpenTelemetry project
+// (github.com/open-telemetry/opentelemetry-python-contrib) is recommended.
+var knownPackages = map[string]knownPackage{
+	"fastapi":                {framework: "FastAPI", instrumentation: "opentelemetry-instrumentation-fastapi"},
+	"flask":                  {framework: "Flask", instrumentation: "opentelemetry-instrumentation-flask"},
+	"django":                 {framework: "Django", instrumentation: "opentelemetry-instrumentation-django"},
+	"psycopg":                {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg"},
+	"psycopg-binary":         {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg"},
+	"psycopg2":               {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg2"},
+	"psycopg2-binary":        {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg2"},
+	"asyncpg":                {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-asyncpg"},
+	"pymysql":                {category: "MySQL", instrumentation: "opentelemetry-instrumentation-pymysql"},
+	"mysqlclient":            {category: "MySQL", instrumentation: "opentelemetry-instrumentation-mysqlclient"},
+	"mysql-connector-python": {category: "MySQL", instrumentation: "opentelemetry-instrumentation-mysql"},
+	"aiomysql":               {category: "MySQL"},
+	"redis":                  {category: "Redis", instrumentation: "opentelemetry-instrumentation-redis"},
+	"kafka-python":           {category: "Kafka", instrumentation: "opentelemetry-instrumentation-kafka-python"},
+	"confluent-kafka":        {category: "Kafka", instrumentation: "opentelemetry-instrumentation-confluent-kafka"},
+	"aiokafka":               {category: "Kafka", instrumentation: "opentelemetry-instrumentation-aiokafka"},
+	"pika":                   {category: "RabbitMQ", instrumentation: "opentelemetry-instrumentation-pika"},
+	"aio-pika":               {category: "RabbitMQ", instrumentation: "opentelemetry-instrumentation-aio-pika"},
+	"requests":               {category: "HTTP client", instrumentation: "opentelemetry-instrumentation-requests"},
+	"httpx":                  {category: "HTTP client", instrumentation: "opentelemetry-instrumentation-httpx"},
+	"aiohttp":                {category: "HTTP client", instrumentation: "opentelemetry-instrumentation-aiohttp-client"},
+	"sqlalchemy":             {category: "ORM", instrumentation: "opentelemetry-instrumentation-sqlalchemy"},
+	"sqlmodel":               {category: "ORM", instrumentation: "opentelemetry-instrumentation-sqlalchemy"}, // built on SQLAlchemy
+	"tortoise-orm":           {category: "ORM", instrumentation: "opentelemetry-instrumentation-tortoiseorm"},
+	"peewee":                 {category: "ORM"}, // only an unofficial, unmaintained package exists
+	"celery":                 {category: "Task queue", instrumentation: "opentelemetry-instrumentation-celery"},
 }
 
 // Analyze reads the Python manifests in fsys and reports what it found.
@@ -105,6 +112,12 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 
 	lang.PackageManager = packageManager(fsys, usesPoetry)
 	lang.Frameworks, lang.Dependencies, lang.OpenTelemetry = classify(names)
+
+	var notes []string
+	lang.Instrumentation, notes = recommend(names, lang.OpenTelemetry)
+	lang.Notes = append(lang.Notes, notes...)
+	lang.Notes = append(lang.Notes, runNotes(lang.Frameworks)...)
+	lang.Activation = "opentelemetry-instrument " + exampleStartCommand(lang.Frameworks)
 	return lang, nil
 }
 
@@ -240,11 +253,12 @@ func classify(names []string) (frameworkNames []string, deps []project.Dependenc
 		}
 		seen[name] = true
 
-		if fw, ok := frameworks[name]; ok {
-			frameworkNames = append(frameworkNames, fw)
-		}
-		if category, ok := dependencyCategories[name]; ok {
-			deps = append(deps, project.Dependency{Category: category, Package: name})
+		if pkg, ok := knownPackages[name]; ok {
+			if pkg.framework != "" {
+				frameworkNames = append(frameworkNames, pkg.framework)
+			} else {
+				deps = append(deps, project.Dependency{Category: pkg.category, Package: name})
+			}
 		}
 		if strings.HasPrefix(name, "opentelemetry-") {
 			otel = append(otel, name)

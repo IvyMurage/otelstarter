@@ -25,6 +25,10 @@ func TestAnalyzePythonProject(t *testing.T) {
 		"    HTTP client      httpx",
 		"    PostgreSQL       asyncpg",
 		"OpenTelemetry:    not installed",
+		"Recommended instrumentation (✓ installed, + to add):",
+		"    + opentelemetry-distro ",
+		"    + opentelemetry-instrumentation-fastapi ",
+		"Start with:       opentelemetry-instrument uvicorn main:app",
 	} {
 		assertContains(t, "stdout", stdout.String(), want)
 	}

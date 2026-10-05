@@ -130,7 +130,7 @@ func TestAnalyzeSetupPyOnlyExplainsGap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Analyze() error = %v", err)
 	}
-	if len(got.Notes) != 1 || !strings.Contains(got.Notes[0], "setup.py is not read") {
+	if !hasNote(got.Notes, "setup.py is not read") {
 		t.Errorf("Notes = %q, want a note explaining setup.py is not read", got.Notes)
 	}
 }
@@ -181,4 +181,13 @@ func TestNormalize(t *testing.T) {
 			t.Errorf("normalize(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+func hasNote(notes []string, want string) bool {
+	for _, n := range notes {
+		if strings.Contains(n, want) {
+			return true
+		}
+	}
+	return false
 }

@@ -22,6 +22,12 @@ type Language struct {
 	Dependencies   []Dependency
 	OpenTelemetry  []string // OpenTelemetry packages already installed
 
+	// Instrumentation lists the OpenTelemetry packages the project should
+	// have, and Activation shows how to switch them on, e.g.
+	// "opentelemetry-instrument uvicorn main:app".
+	Instrumentation []Instrumentation
+	Activation      string
+
 	// DependenciesDetected is false when no adapter supports this language
 	// yet, so "found nothing" is never confused with "did not look".
 	DependenciesDetected bool
@@ -35,4 +41,11 @@ type Language struct {
 type Dependency struct {
 	Category string // what it is, e.g. "PostgreSQL" or "HTTP client"
 	Package  string // the package name as written in the manifest, normalised
+}
+
+// Instrumentation is an OpenTelemetry package recommended for the project.
+type Instrumentation struct {
+	Package   string // e.g. "opentelemetry-instrumentation-fastapi"
+	Purpose   string // what it gives the user, e.g. "Database queries (asyncpg)"
+	Installed bool
 }

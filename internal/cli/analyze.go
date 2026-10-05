@@ -56,6 +56,26 @@ func printProject(w io.Writer, p project.Project) {
 
 		printField(w, "OpenTelemetry", orDefault(strings.Join(lang.OpenTelemetry, ", "), "not installed"))
 
+		if len(lang.Instrumentation) > 0 {
+			fmt.Fprintln(w)
+			fmt.Fprintln(w, "  Recommended instrumentation (✓ installed, + to add):")
+			for _, inst := range lang.Instrumentation {
+				mark := "+"
+				if inst.Installed {
+					mark = "✓"
+				}
+				fmt.Fprintf(w, "    %s %-45s %s\n", mark, inst.Package, inst.Purpose)
+			}
+		}
+		if lang.Activation != "" {
+			fmt.Fprintln(w)
+			printField(w, "Start with", lang.Activation)
+			fmt.Fprintf(w, "  %-18s%s\n", "", "(replace the example with your own start command)")
+		}
+
+		if len(lang.Notes) > 0 {
+			fmt.Fprintln(w)
+		}
 		for _, note := range lang.Notes {
 			fmt.Fprintf(w, "  Note: %s\n", note)
 		}
