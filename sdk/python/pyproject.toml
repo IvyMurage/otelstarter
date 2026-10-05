@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "otelstarter"
+version = "0.1.0"
+description = "Business-aware domain events for OpenTelemetry, from the otelstarter project."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# Only the API: an app without OpenTelemetry configured gets a no-op, and the
+# app chooses the SDK version. 1.45.0 is the version otelstarter tests with.
+dependencies = ["opentelemetry-api>=1.45.0"]
+
+[project.optional-dependencies]
+dev = [
+    "opentelemetry-sdk==1.45.0",
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/IvyMurage/otelstarter"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/otelstarter"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE"]
+
+[tool.mypy]
+strict = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]  # unexpected warnings fail the tests
