@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/project"
@@ -43,12 +44,12 @@ func Detect(dir string) (project.Project, error) {
 	}
 	defer root.Close()
 
-	return detectFS(path, root.FS())
+	return DetectFS(path, root.FS())
 }
 
-// detectFS holds the logic separately from Detect so tests can pass an
-// in-memory file system.
-func detectFS(path string, fsys fs.FS) (project.Project, error) {
+// DetectFS analyses the project in fsys, which the caller has already
+// opened. path is only used for display. Tests pass an in-memory file system.
+func DetectFS(path string, fsys fs.FS) (project.Project, error) {
 	p := project.Project{Path: path}
 
 	for _, l := range languages {
@@ -97,4 +98,12 @@ func existingFiles(fsys fs.FS, names []string) ([]string, error) {
 		}
 	}
 	return found, nil
+}
+
+// NoProjectError explains that no supported manifest was found in path.
+func NoProjectError(path string) error {
+	return fmt.Errorf("no supported project found in %s.\n\n"+
+		"Looked for: %s\n"+
+		"Run otelstarter from your project's root folder, or pass the folder path, for example: otelstarter analyze ./my-app or otelstarter init ./my-app",
+		path, strings.Join(AllManifests(), ", "))
 }

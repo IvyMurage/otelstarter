@@ -16,6 +16,7 @@ type Project struct {
 // frontend tooling.
 type Language struct {
 	Name           string   // "Python", "Node.js" or "Go"
+	AppName        string   // the application's name from its manifest, if declared
 	Manifests      []string // files that identified the language, e.g. "pyproject.toml"
 	PackageManager string   // empty when unknown
 	Frameworks     []string
@@ -48,4 +49,11 @@ type Instrumentation struct {
 	Package   string // e.g. "opentelemetry-instrumentation-fastapi"
 	Purpose   string // what it gives the user, e.g. "Database queries (asyncpg)"
 	Installed bool
+}
+
+// EnvVar is one setting written to the generated otel.env file.
+type EnvVar struct {
+	Name    string
+	Value   string
+	Comment string // one line shown above the setting, explaining it
 }

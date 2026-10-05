@@ -38,7 +38,7 @@ Project: /home/dev/shop
 
   Recommended instrumentation (✓ installed, + to add):
     + opentelemetry-distro                          SDK and the opentelemetry-instrument launcher
-    + opentelemetry-exporter-otlp                   Sends telemetry to an OpenTelemetry Collector
+    + opentelemetry-exporter-otlp-proto-http        Sends telemetry to an OpenTelemetry Collector over HTTP
     + opentelemetry-instrumentation-logging         Adds trace and span IDs to log records
     + opentelemetry-instrumentation-system-metrics  Runtime metrics: CPU, memory, garbage collection
     + opentelemetry-instrumentation-asyncpg         Database queries (asyncpg)
@@ -77,13 +77,13 @@ Every Python service gets four base packages:
 | Package | Why |
 |---------|-----|
 | `opentelemetry-distro` | The SDK, plus the `opentelemetry-instrument` command that turns instrumentation on without code changes |
-| `opentelemetry-exporter-otlp` | Sends logs, metrics and traces to an OpenTelemetry Collector |
+| `opentelemetry-exporter-otlp-proto-http` | Sends logs, metrics and traces to an OpenTelemetry Collector over HTTP. The gRPC exporter is left out because it pulls in `grpcio`, a large compiled package; `otelstarter init` sets `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf` to match |
 | `opentelemetry-instrumentation-logging` | Adds `trace_id` and `span_id` to Python log records, so logs can be matched to traces |
 | `opentelemetry-instrumentation-system-metrics` | CPU, memory and garbage-collection metrics |
 
 Each detected framework or library adds its matching instrumentation package. Only packages published by the OpenTelemetry project are recommended. Libraries without one (currently `aiomysql` and `peewee`) are reported in a note, because their calls will be missing from traces.
 
-Packages already installed are marked `✓`. Versions are not chosen yet; `otelstarter init` will pin compatible versions, because instrumentation packages must match the OpenTelemetry SDK version.
+Packages already installed are marked `✓`. `otelstarter init` adds the missing ones with pinned versions; see [init](init.md).
 
 ### Verified
 

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -9,25 +10,30 @@ import (
 	"github.com/IvyMurage/otelstarter/internal/project"
 )
 
-func analyze(args []string, stdout io.Writer) error {
-	dir := "."
-	if len(args) == 1 {
-		dir = args[0]
+func runAnalyze(fs *flag.FlagSet, args []string, s streams) error {
+	rest, err := parseArgs(fs, args, 1)
+	if err != nil {
+		return err
 	}
 
-	p, err := detect.Detect(dir)
+	p, err := detect.Detect(pathArg(rest))
 	if err != nil {
 		return err
 	}
 	if len(p.Languages) == 0 {
-		return fmt.Errorf("no supported project found in %s.\n\n"+
-			"Looked for: %s\n"+
-			"Run otelstarter analyze from your project's root folder, or pass its path: otelstarter analyze ./my-app",
-			p.Path, strings.Join(detect.AllManifests(), ", "))
+		return detect.NoProjectError(p.Path)
 	}
 
-	printProject(stdout, p)
+	printProject(s.stdout, p)
 	return nil
+}
+
+// pathArg returns the optional [path] argument, defaulting to the current folder.
+func pathArg(args []string) string {
+	if len(args) == 1 {
+		return args[0]
+	}
+	return "."
 }
 
 func printProject(w io.Writer, p project.Project) {

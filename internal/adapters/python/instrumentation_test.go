@@ -16,7 +16,7 @@ func TestRecommend(t *testing.T) {
 
 	want := []project.Instrumentation{
 		{Package: "opentelemetry-distro", Purpose: "SDK and the opentelemetry-instrument launcher", Installed: true},
-		{Package: "opentelemetry-exporter-otlp", Purpose: "Sends telemetry to an OpenTelemetry Collector"},
+		{Package: "opentelemetry-exporter-otlp-proto-http", Purpose: "Sends telemetry to an OpenTelemetry Collector over HTTP"},
 		{Package: "opentelemetry-instrumentation-logging", Purpose: "Adds trace and span IDs to log records"},
 		{Package: "opentelemetry-instrumentation-system-metrics", Purpose: "Runtime metrics: CPU, memory, garbage collection"},
 		{Package: "opentelemetry-instrumentation-asyncpg", Purpose: "Database queries (asyncpg)", Installed: true},

@@ -77,12 +77,13 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	if data, ok, err := readManifest(fsys, "pyproject.toml"); err != nil {
 		return lang, err
 	} else if ok {
-		deps, poetry, err := parsePyproject(data)
+		py, err := parsePyproject(data)
 		if err != nil {
 			return lang, err
 		}
-		names = append(names, deps...)
-		usesPoetry = poetry
+		names = append(names, py.dependencies...)
+		usesPoetry = py.usesPoetry
+		lang.AppName = py.name
 		readAny = true
 	}
 
@@ -146,41 +147,52 @@ func fileExists(fsys fs.FS, name string) bool {
 	return err == nil
 }
 
-// parsePyproject returns dependency names from a PEP 621 [project] table or a
-// Poetry [tool.poetry.dependencies] table, and whether Poetry is in use.
-// Optional and development dependencies are ignored: they rarely run in
-// production, which is what we instrument.
-func parsePyproject(data []byte) ([]string, bool, error) {
+// pyproject is what otelstarter needs from a pyproject.toml file.
+type pyproject struct {
+	name         string
+	dependencies []string
+	usesPoetry   bool
+}
+
+// parsePyproject reads a PEP 621 [project] table or a Poetry [tool.poetry]
+// table. Optional and development dependencies are ignored: they rarely run
+// in production, which is what we instrument.
+func parsePyproject(data []byte) (pyproject, error) {
 	// Struct tags (`toml:"..."`) tell the TOML library which key fills each field.
 	var doc struct {
 		Project struct {
+			Name         string   `toml:"name"`
 			Dependencies []string `toml:"dependencies"`
 		} `toml:"project"`
 		Tool struct {
 			Poetry *struct {
+				Name         string         `toml:"name"`
 				Dependencies map[string]any `toml:"dependencies"`
 			} `toml:"poetry"`
 		} `toml:"tool"`
 	}
 	if err := toml.Unmarshal(data, &doc); err != nil {
-		return nil, false, fmt.Errorf("pyproject.toml is not valid TOML: %w. "+
-			"Fix the syntax error and run otelstarter analyze again", err)
+		return pyproject{}, fmt.Errorf("pyproject.toml is not valid TOML: %w. "+
+			"Fix the syntax error and run otelstarter again", err)
 	}
 
-	var names []string
+	result := pyproject{name: doc.Project.Name}
 	for _, req := range doc.Project.Dependencies {
-		names = append(names, requirementName(req))
+		result.dependencies = append(result.dependencies, requirementName(req))
 	}
 
-	usesPoetry := doc.Tool.Poetry != nil
-	if usesPoetry {
+	if doc.Tool.Poetry != nil {
+		result.usesPoetry = true
+		if result.name == "" {
+			result.name = doc.Tool.Poetry.Name
+		}
 		for name := range doc.Tool.Poetry.Dependencies {
 			if name != "python" { // Poetry lists the interpreter version here too
-				names = append(names, normalize(name))
+				result.dependencies = append(result.dependencies, normalize(name))
 			}
 		}
 	}
-	return names, usesPoetry, nil
+	return result, nil
 }
 
 func parsePipfile(data []byte) ([]string, error) {
@@ -189,7 +201,7 @@ func parsePipfile(data []byte) ([]string, error) {
 	}
 	if err := toml.Unmarshal(data, &doc); err != nil {
 		return nil, fmt.Errorf("Pipfile is not valid TOML: %w. "+
-			"Fix the syntax error and run otelstarter analyze again", err)
+			"Fix the syntax error and run otelstarter again", err)
 	}
 	var names []string
 	for name := range doc.Packages {

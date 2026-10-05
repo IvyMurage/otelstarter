@@ -191,3 +191,21 @@ func hasNote(notes []string, want string) bool {
 	}
 	return false
 }
+
+func TestAnalyzeReadsAppName(t *testing.T) {
+	tests := map[string]string{
+		"PEP 621": "[project]\nname = \"shop-api\"\n",
+		"Poetry":  "[tool.poetry]\nname = \"shop-api\"\n",
+	}
+	for name, content := range tests {
+		t.Run(name, func(t *testing.T) {
+			lang, err := Analyze(files(map[string]string{"pyproject.toml": content}))
+			if err != nil {
+				t.Fatalf("Analyze() error = %v", err)
+			}
+			if lang.AppName != "shop-api" {
+				t.Errorf("AppName = %q, want %q", lang.AppName, "shop-api")
+			}
+		})
+	}
+}
