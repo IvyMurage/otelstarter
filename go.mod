@@ -1,3 +1,3 @@
-module github.com/Murage-Ivy/otelstarter
+module github.com/IvyMurage/otelstarter
 
 go 1.24

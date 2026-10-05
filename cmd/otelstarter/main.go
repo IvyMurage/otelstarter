@@ -7,7 +7,7 @@ package main
 import (
 	"os"
 
-	"github.com/Murage-Ivy/otelstarter/internal/cli"
+	"github.com/IvyMurage/otelstarter/internal/cli"
 )
 
 func main() {

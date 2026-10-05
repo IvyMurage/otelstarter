@@ -22,7 +22,7 @@ const (
 
 // Version is replaced at build time with:
 //
-//	go build -ldflags "-X github.com/Murage-Ivy/otelstarter/internal/cli.Version=v0.1.0"
+//	go build -ldflags "-X github.com/IvyMurage/otelstarter/internal/cli.Version=v0.1.0"
 var Version = "dev"
 
 type command struct {
