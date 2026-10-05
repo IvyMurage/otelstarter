@@ -15,7 +15,7 @@ otelstarter run
 
 Early development. Working commands:
 
-- `otelstarter analyze`: detect a project's language, framework and dependencies ([docs](docs/analyze.md)). Full detection for Python; Node.js and Go are recognised but not analysed yet.
+- `otelstarter analyze`: detect a project's language, framework and dependencies, and recommend OpenTelemetry instrumentation ([docs](docs/analyze.md)). Full detection for Python; Node.js and Go are recognised but not analysed yet.
 - `otelstarter version` and `otelstarter help`.
 
 The other commands print "not implemented yet".
