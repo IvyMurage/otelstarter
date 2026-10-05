@@ -22,8 +22,9 @@ func TestRun(t *testing.T) {
 		{"unknown command", []string{"deploy"}, exitUsage, "", `Unknown command "deploy"`},
 		{"command --help", []string{"version", "--help"}, exitOK, "", "Usage: otelstarter version"},
 		{"unknown flag", []string{"version", "--bogus"}, exitUsage, "", "flag provided but not defined"},
-		{"stray argument", []string{"version", "extra"}, exitUsage, "", `takes no arguments, got "extra"`},
-		{"unimplemented command", []string{"analyze"}, exitError, "", "not implemented yet"},
+		{"stray argument", []string{"version", "extra"}, exitUsage, "", `Too many arguments for otelstarter version: unexpected "extra"`},
+		{"unimplemented command", []string{"init"}, exitError, "", "not implemented yet"},
+		{"analyze with two paths", []string{"analyze", "a", "b"}, exitUsage, "", `unexpected "b"`},
 	}
 
 	for _, tt := range tests {

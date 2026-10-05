@@ -28,7 +28,10 @@ go test -race ./...       # runs the tests and checks for data races
 | Path | What lives there |
 |------|------------------|
 | `cmd/otelstarter/` | The `main` package. One line that calls `internal/cli`. |
-| `internal/cli/` | Argument parsing and command dispatch. No business logic. |
+| `internal/cli/` | Argument parsing, command dispatch and output formatting. No business logic. |
+| `internal/project/` | Language-neutral description of an analysed project. |
+| `internal/detect/` | Finds which languages a project uses and calls their adapter. |
+| `internal/adapters/python/` | Reads Python manifests. |
 | `docs/` | Architecture, requirements, guidelines, ADRs. |
 
 Go only allows code inside `internal/` to be imported by this module, so nothing there is a public API.

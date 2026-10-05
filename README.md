@@ -13,7 +13,12 @@ otelstarter run
 
 ## Status
 
-Early development. Only the CLI skeleton exists. `otelstarter version` and `otelstarter help` work. Every other command prints "not implemented yet".
+Early development. Working commands:
+
+- `otelstarter analyze`: detect a project's language, framework and dependencies ([docs](docs/analyze.md)). Full detection for Python; Node.js and Go are recognised but not analysed yet.
+- `otelstarter version` and `otelstarter help`.
+
+The other commands print "not implemented yet".
 
 ## Build from source
 
