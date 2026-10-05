@@ -30,9 +30,9 @@ func TestDetectLanguages(t *testing.T) {
 				fsys[name] = &fstest.MapFile{}
 			}
 
-			p, err := detectFS("/app", fsys)
+			p, err := DetectFS("/app", fsys)
 			if err != nil {
-				t.Fatalf("detectFS() error = %v", err)
+				t.Fatalf("DetectFS() error = %v", err)
 			}
 
 			var got []string
@@ -47,9 +47,9 @@ func TestDetectLanguages(t *testing.T) {
 }
 
 func TestDetectMarksUnsupportedDependencyDetection(t *testing.T) {
-	p, err := detectFS("/app", fstest.MapFS{"go.mod": &fstest.MapFile{}, "setup.py": &fstest.MapFile{}})
+	p, err := DetectFS("/app", fstest.MapFS{"go.mod": &fstest.MapFile{}, "setup.py": &fstest.MapFile{}})
 	if err != nil {
-		t.Fatalf("detectFS() error = %v", err)
+		t.Fatalf("DetectFS() error = %v", err)
 	}
 	for _, l := range p.Languages {
 		want := l.Name == "Python"
@@ -61,9 +61,9 @@ func TestDetectMarksUnsupportedDependencyDetection(t *testing.T) {
 
 func TestDetectIgnoresDirectoriesNamedLikeManifests(t *testing.T) {
 	fsys := fstest.MapFS{"go.mod/readme": &fstest.MapFile{}} // makes "go.mod" a folder
-	p, err := detectFS("/app", fsys)
+	p, err := DetectFS("/app", fsys)
 	if err != nil {
-		t.Fatalf("detectFS() error = %v", err)
+		t.Fatalf("DetectFS() error = %v", err)
 	}
 	if len(p.Languages) != 0 {
 		t.Errorf("languages = %v, want none", p.Languages)

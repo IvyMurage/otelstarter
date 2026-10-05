@@ -13,7 +13,9 @@ import (
 // libraries it uses.
 var basePackages = []project.Instrumentation{
 	{Package: "opentelemetry-distro", Purpose: "SDK and the opentelemetry-instrument launcher"},
-	{Package: "opentelemetry-exporter-otlp", Purpose: "Sends telemetry to an OpenTelemetry Collector"},
+	// HTTP only: the gRPC exporter pulls in grpcio, a large compiled package.
+	// otel.env sets OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf to match.
+	{Package: "opentelemetry-exporter-otlp-proto-http", Purpose: "Sends telemetry to an OpenTelemetry Collector over HTTP"},
 	{Package: "opentelemetry-instrumentation-logging", Purpose: "Adds trace and span IDs to log records"},
 	{Package: "opentelemetry-instrumentation-system-metrics", Purpose: "Runtime metrics: CPU, memory, garbage collection"},
 }

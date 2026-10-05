@@ -4,7 +4,7 @@ Read [docs/ENGINEERING_GUIDELINES.md](docs/ENGINEERING_GUIDELINES.md) first. It 
 
 ## Development setup
 
-Install Go 1.24 or newer from <https://go.dev/dl/>.
+Install Go 1.25 or newer from <https://go.dev/dl/>.
 
 ```bash
 go build ./...                       # compile everything
@@ -31,7 +31,8 @@ go test -race ./...       # runs the tests and checks for data races
 | `internal/cli/` | Argument parsing, command dispatch and output formatting. No business logic. |
 | `internal/project/` | Language-neutral description of an analysed project. |
 | `internal/detect/` | Finds which languages a project uses and calls their adapter. |
-| `internal/adapters/python/` | Reads Python manifests. |
+| `internal/adapters/python/` | Reads Python manifests, recommends instrumentation, and knows how Python projects add packages. |
+| `internal/setup/` | Builds and applies the file changes for `init`. The only package that writes to a user's project. |
 | `docs/` | Architecture, requirements, guidelines, ADRs. |
 
 Go only allows code inside `internal/` to be imported by this module, so nothing there is a public API.

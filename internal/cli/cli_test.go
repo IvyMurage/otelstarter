@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 )
@@ -23,14 +24,14 @@ func TestRun(t *testing.T) {
 		{"command --help", []string{"version", "--help"}, exitOK, "", "Usage: otelstarter version"},
 		{"unknown flag", []string{"version", "--bogus"}, exitUsage, "", "flag provided but not defined"},
 		{"stray argument", []string{"version", "extra"}, exitUsage, "", `Too many arguments for otelstarter version: unexpected "extra"`},
-		{"unimplemented command", []string{"init"}, exitError, "", "not implemented yet"},
+		{"unimplemented command", []string{"run"}, exitError, "", "not implemented yet"},
 		{"analyze with two paths", []string{"analyze", "a", "b"}, exitUsage, "", `unexpected "b"`},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			code := Run(tt.args, &stdout, &stderr)
+			code := Run(tt.args, noInput(), &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Errorf("exit code = %d, want %d (stderr: %q)", code, tt.wantCode, stderr.String())
@@ -43,12 +44,16 @@ func TestRun(t *testing.T) {
 
 func TestHelpListsEveryMVPCommand(t *testing.T) {
 	var stdout bytes.Buffer
-	Run([]string{"help"}, &stdout, &bytes.Buffer{})
+	Run([]string{"help"}, noInput(), &stdout, &bytes.Buffer{})
 
 	for _, name := range []string{"init", "analyze", "run", "validate", "doctor", "version"} {
 		assertContains(t, "help", stdout.String(), "  "+name+" ")
 	}
 }
+
+// noInput stands in for stdin. It is not a terminal, so commands that ask
+// for confirmation must be given --yes.
+func noInput() io.Reader { return strings.NewReader("") }
 
 // assertContains passes when want is empty, so table rows can skip a stream.
 func assertContains(t *testing.T, stream, got, want string) {

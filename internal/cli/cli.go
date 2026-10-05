@@ -26,27 +26,40 @@ const (
 //	go build -ldflags "-X github.com/IvyMurage/otelstarter/internal/cli.Version=v0.1.0"
 var Version = "dev"
 
+// errUsage means the command line was wrong. The details have already been
+// printed, so Run only sets the exit code.
+var errUsage = errors.New("invalid usage")
+
+// streams bundles the input and output a command may use. Tests pass
+// buffers instead of the real terminal.
+type streams struct {
+	stdin  io.Reader
+	stdout io.Writer
+	stderr io.Writer
+}
+
 type command struct {
 	name    string
 	args    string // positional arguments shown in help, e.g. "[path]"
-	maxArgs int
 	summary string
-	run     func(args []string, stdout io.Writer) error
+	// run registers its own flags on fs, parses args with parseArgs, then
+	// does its work.
+	run func(fs *flag.FlagSet, args []string, s streams) error
 }
 
 // commands is a slice, not a map, so help output keeps this order.
 var commands = []command{
-	{"init", "", 0, "Add OpenTelemetry configuration to the current project", notImplemented("init", "Phase 4")},
-	{"analyze", "[path]", 1, "Detect the project's language, framework and dependencies", analyze},
-	{"run", "", 0, "Start a local collector and observability backend", notImplemented("run", "Phase 6")},
-	{"validate", "", 0, "Check that the generated configuration works", notImplemented("validate", "Phase 7")},
-	{"doctor", "", 0, "Diagnose common setup problems and suggest fixes", notImplemented("doctor", "Phase 7")},
-	{"version", "", 0, "Print the otelstarter version", printVersion},
+	{"init", "[path]", "Add OpenTelemetry configuration to the project", runInit},
+	{"analyze", "[path]", "Detect the project's language, framework and dependencies", runAnalyze},
+	{"run", "", "Start a local collector and observability backend", notImplemented("Phase 6")},
+	{"validate", "", "Check that the generated configuration works", notImplemented("Phase 7")},
+	{"doctor", "", "Diagnose common setup problems and suggest fixes", notImplemented("Phase 7")},
+	{"version", "", "Print the otelstarter version", runVersion},
 }
 
 // Run executes the CLI and returns the process exit code. It takes its
-// arguments and output streams as parameters so tests can call it directly.
-func Run(args []string, stdout, stderr io.Writer) int {
+// arguments and streams as parameters so tests can call it directly.
+func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		printUsage(stderr)
 		return exitUsage
@@ -64,30 +77,41 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 
-	// No command takes flags yet; parsing still gives every command --help
-	// and rejects unknown flags and extra arguments instead of ignoring them.
-	flags := flag.NewFlagSet(cmd.name, flag.ContinueOnError)
-	flags.SetOutput(stderr)
-	flags.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: otelstarter %s\n\n%s.\n", strings.TrimSpace(cmd.name+" "+cmd.args), cmd.summary)
-	}
-	if err := flags.Parse(args[1:]); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return exitOK
-		}
-		return exitUsage
-	}
-	if flags.NArg() > cmd.maxArgs {
-		fmt.Fprintf(stderr, "Too many arguments for otelstarter %s: unexpected %q.\n\nRun 'otelstarter %s --help' for usage.\n",
-			cmd.name, flags.Arg(cmd.maxArgs), cmd.name)
-		return exitUsage
+	fs := flag.NewFlagSet(cmd.name, flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(stderr, "Usage: otelstarter %s\n\n%s.\n", strings.TrimSpace(cmd.name+" [flags] "+cmd.args), cmd.summary)
+		fmt.Fprintln(stderr, "\nFlags:")
+		fs.PrintDefaults()
 	}
 
-	if err := cmd.run(flags.Args(), stdout); err != nil {
+	err := cmd.run(fs, args[1:], streams{stdin, stdout, stderr})
+	switch {
+	case err == nil, errors.Is(err, flag.ErrHelp):
+		return exitOK
+	case errors.Is(err, errUsage):
+		return exitUsage
+	default:
 		fmt.Fprintf(stderr, "Error: %v\n", err)
 		return exitError
 	}
-	return exitOK
+}
+
+// parseArgs parses flags, rejecting unknown flags and more than maxArgs
+// positional arguments, and returns the positional arguments.
+func parseArgs(fs *flag.FlagSet, args []string, maxArgs int) ([]string, error) {
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil, err
+		}
+		return nil, errUsage // the flag package has already printed the problem
+	}
+	if fs.NArg() > maxArgs {
+		fmt.Fprintf(fs.Output(), "Too many arguments for otelstarter %s: unexpected %q.\n\nRun 'otelstarter %s --help' for usage.\n",
+			fs.Name(), fs.Arg(maxArgs), fs.Name())
+		return nil, errUsage
+	}
+	return fs.Args(), nil
 }
 
 func findCommand(name string) (command, bool) {
@@ -113,15 +137,21 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Run 'otelstarter <command> --help' for details on a command.")
 }
 
-func printVersion(_ []string, stdout io.Writer) error {
-	fmt.Fprintf(stdout, "otelstarter %s (%s, %s/%s)\n", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+func runVersion(fs *flag.FlagSet, args []string, s streams) error {
+	if _, err := parseArgs(fs, args, 0); err != nil {
+		return err
+	}
+	fmt.Fprintf(s.stdout, "otelstarter %s (%s, %s/%s)\n", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	return nil
 }
 
 // notImplemented returns a placeholder handler so every MVP command is
 // discoverable now and fails with a clear message until it is built.
-func notImplemented(name, phase string) func([]string, io.Writer) error {
-	return func([]string, io.Writer) error {
-		return fmt.Errorf("'otelstarter %s' is not implemented yet. It is planned for %s of the MVP", name, phase)
+func notImplemented(phase string) func(*flag.FlagSet, []string, streams) error {
+	return func(fs *flag.FlagSet, args []string, _ streams) error {
+		if _, err := parseArgs(fs, args, 0); err != nil {
+			return err
+		}
+		return fmt.Errorf("'otelstarter %s' is not implemented yet. It is planned for %s of the MVP", fs.Name(), phase)
 	}
 }
