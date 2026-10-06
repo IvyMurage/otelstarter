@@ -6,6 +6,10 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `docs/quickstart.md`, and install instructions in the README, including adding `~/go/bin` to `PATH`.
+- `run` shares a stack that is already running (for example `otelstarter run` in another terminal), instead of removing its containers.
+- `validate` and `doctor` check the Python version that will run the app (3.10+ required). It prefers the virtual environment's interpreter, and runs in the project folder so pyenv's `.python-version` applies.
+- Python SDK 0.2.0: with `OTELSTARTER_CONSOLE_EVENTS=true` (set by `run`), each domain event also prints a line to the terminal. It is not exported.
 - `analyze` recommends, and `init` adds, the `otelstarter` domain-event SDK (`otelstarter==0.1.0`) alongside the OpenTelemetry packages.
 - Release workflow for the Python SDK: pushing a `sdk-python-vX.Y.Z` tag tests, builds and publishes it to PyPI through Trusted Publishing. See `sdk/python/RELEASING.md`.
 - `validate` and `doctor` check that OpenTelemetry packages pinned with `==` belong together: all beta packages (`0.NNbN`) at one version, all stable ones (`1.NN.N`) at another.
@@ -19,6 +23,9 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Changed
 
+- When the app exits by itself, `run` keeps the stack running in a terminal, so the crash's telemetry stays in Grafana. Without a terminal it still stops.
+- **Python SDK 0.2.0 (breaking):** problems with an event are logged as warnings on the `otelstarter` logger instead of being raised as `OtelStarterWarning`, which is removed. They now look like the app's own logs and reach the backend.
+- `init` pins `otelstarter==0.2.0`.
 - `otel.env` no longer sets `OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED`. It is deprecated and stopped the logging instrumentation from installing its own handler. If an earlier `init` wrote it, delete that line.
 - `init` now suggests `otelstarter run -- <command>` as the start command.
 - The recommended exporter is now `opentelemetry-exporter-otlp-proto-http` instead of `opentelemetry-exporter-otlp`, which avoids installing `grpcio`.
