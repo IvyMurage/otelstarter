@@ -276,9 +276,7 @@ But high-cardinality event attributes must not automatically become metric label
 
 ## 15. Domain Events and Traces
 
-Domain events can be attached to the active span where supported.
-
-Example:
+Domain events belong to the active span. Conceptually:
 
 ```text
 Trace
@@ -288,6 +286,10 @@ Trace
     ├── external-provider span
     └── event: payment.completed
 ```
+
+They are linked to the span through its `trace_id` and `span_id`, not added to it as span events. Each event is an OpenTelemetry **log-based event**: a log record with an event name, emitted through the Logs API. OpenTelemetry is [deprecating the Span Events API](https://opentelemetry.io/blog/2026/deprecating-span-events/) in favour of log-based events ([OTEP 4430](https://github.com/open-telemetry/opentelemetry-specification/blob/main/oteps/4430-span-event-api-deprecation-plan.md)). Using one signal also keeps section 13's rule against redundant telemetry.
+
+Backends show the event next to the span's logs and link from it to the trace. See [ADR 0006](adr/0006-domain-events-are-log-based-events.md).
 
 ## 16. Privacy
 

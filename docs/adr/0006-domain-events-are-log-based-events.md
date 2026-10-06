@@ -37,5 +37,5 @@ OpenTelemetry has since decided that events are **log records with an event name
 
 - Events appear in Loki next to the request's logs, and link to the trace in Tempo through `trace_id`.
 - In Loki, events are found by body text (`|= "payment.completed"`) or by attribute (`event_domain="payments"`), not by event name, until Loki stores that field.
-- `DOMAIN_EVENTS.md` section 15 no longer matches the implementation. It should be updated to point here.
+- `DOMAIN_EVENTS.md` section 15 now describes this approach and points here.
 - The package is not on PyPI yet. Until it is published, users install it from GitHub, and `otelstarter init` does not add it.
