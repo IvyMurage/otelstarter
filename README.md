@@ -21,6 +21,8 @@ Early development. Working commands:
 - `otelstarter validate` and `otelstarter doctor`: check the setup and explain how to fix problems ([docs](docs/validate.md)).
 - `otelstarter version` and `otelstarter help`.
 
+Domain events for Python apps: `observability.event("payment.completed", domain="payments", outcome="success")`. See the [Python SDK](sdk/python/README.md).
+
 
 ## Build from source
 

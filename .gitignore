@@ -1,3 +1,11 @@
 # Built binaries
 /otelstarter
 /dist/
+
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

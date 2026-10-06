@@ -39,3 +39,26 @@ jobs:
           validate --config=/config.yaml
       - name: Validate Compose file
         run: docker compose -f internal/localstack/files/compose.yaml config --quiet
+
+  # The Python domain-event SDK, on the oldest and newest supported Pythons.
+  python-sdk:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e '.[dev]'
+      - name: Lint
+        run: ruff check . && ruff format --check .
+      - name: Type check
+        run: mypy
+      - name: Test
+        run: pytest
