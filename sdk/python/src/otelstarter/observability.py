@@ -9,17 +9,25 @@ name is the event, linked to the current trace. OpenTelemetry adds the
 technical context (trace and span IDs, service name, environment) itself.
 
 Recording an event never raises, so observability can never break the app.
-Problems are reported once each through Python's warnings module.
+Problems are logged once each as warnings on the "otelstarter" logger, so they
+appear with your other logs, in the terminal and in your backend.
+
+For local development, set OTELSTARTER_CONSOLE_EVENTS=true (otelstarter run
+does this) to also print a one-line summary of each event to stderr. The
+summary is not exported, so each event is still sent exactly once.
 """
 
 from __future__ import annotations
 
+import logging
+import os
 import re
-import warnings
+import sys
 
+from opentelemetry import trace
 from opentelemetry._logs import SeverityNumber, get_logger
 
-__all__ = ["OtelStarterWarning", "event"]
+__all__ = ["event"]
 
 # <domain>.<action>, lowercase: "payment.completed", "payment.authorization.failed".
 _NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$")
@@ -31,15 +39,13 @@ _MAX_VALUE_LENGTH = 256
 # (for example via opentelemetry-instrument) and does nothing before that.
 _logger = get_logger("otelstarter")
 
+# Problems with an event are logged here. Through OpenTelemetry's logging
+# instrumentation they reach the backend like any other warning log.
+_log = logging.getLogger("otelstarter")
+
+_CONSOLE_ENV = "OTELSTARTER_CONSOLE_EVENTS"
+
 _warned: set[str] = set()
-
-
-class OtelStarterWarning(UserWarning):
-    """Warns about a domain event that was recorded imperfectly or not at all.
-
-    Filter it like any warning, for example to fail tests on it:
-    ``warnings.simplefilter("error", OtelStarterWarning)``.
-    """
 
 
 def event(
@@ -70,7 +76,7 @@ def event(
     try:
         _emit(name, domain, operation, outcome, entity_type, entity_id)
     except Exception as exc:  # noqa: BLE001 - recording must never break the app
-        _warn_once("emit-failed", f"otelstarter could not record event {name!r}: {exc!r}")
+        _warn_once("emit-failed", f"otelstarter could not record event {name!r}: {exc!r}", depth=1)
 
 
 def _emit(
@@ -82,13 +88,16 @@ def _emit(
     entity_id: object,
 ) -> None:
     if not isinstance(name, str) or not name:
-        _warn_once("name-type", f"Event name must be a non-empty string, got {name!r}. The event was not recorded.")
+        _warn_once(
+            "name-type", f"Event name must be a non-empty string, got {name!r}. The event was not recorded.", depth=2
+        )
         return
     if not _NAME_PATTERN.match(name):
         _warn_once(
             "name:" + name,
             f"Event name {name!r} does not follow <domain>.<action> in lowercase, "
             "for example 'payment.completed'. The event was still recorded.",
+            depth=2,
         )
 
     fields = {
@@ -112,6 +121,26 @@ def _emit(
         attributes=attributes,
     )
 
+    if os.environ.get(_CONSOLE_ENV, "").lower() == "true":
+        _print_summary(name, attributes)
+
+
+def _print_summary(name: str, attributes: dict[str, str]) -> None:
+    """Print one line about the event to stderr, for local development."""
+    parts = [f"[otelstarter] event {name}"]
+    short = {
+        "event.domain": "domain",
+        "event.outcome": "outcome",
+        "business.operation": "operation",
+        "business.entity.type": "entity_type",
+        "business.entity.id": "entity_id",
+    }
+    parts += [f"{short[key]}={value}" for key, value in attributes.items()]
+    span_context = trace.get_current_span().get_span_context()
+    if span_context.is_valid:
+        parts.append(f"trace_id={span_context.trace_id:032x}")
+    print(" ".join(parts), file=sys.stderr, flush=True)
+
 
 def _clean(name: str, key: str, value: object) -> str | None:
     """Return the value as a short string, or None to leave the field out."""
@@ -123,6 +152,7 @@ def _clean(name: str, key: str, value: object) -> str | None:
             f"type:{key}",
             f"{key} on event {name!r} must be a string or int, got {type(value).__name__}. "
             "It was left out: events carry business meaning, not payloads.",
+            depth=3,
         )
         return None
     text = str(value)
@@ -131,14 +161,19 @@ def _clean(name: str, key: str, value: object) -> str | None:
             f"long:{key}",
             f"{key} on event {name!r} is {len(text)} characters long, which looks like a payload. "
             f"It was cut to {_MAX_VALUE_LENGTH}.",
+            depth=3,
         )
         text = text[:_MAX_VALUE_LENGTH]
     return text
 
 
-def _warn_once(key: str, message: str) -> None:
+def _warn_once(key: str, message: str, depth: int) -> None:
+    """Log a warning once per key.
+
+    depth is how many otelstarter functions sit between the user's event()
+    call and this one, so the record points at the user's file and line.
+    """
     if key in _warned:
         return
     _warned.add(key)
-    # stacklevel=4 points the warning at the user's event() call.
-    warnings.warn(message, OtelStarterWarning, stacklevel=4)
+    _log.warning(message, stacklevel=depth + 2)

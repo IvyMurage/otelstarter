@@ -39,3 +39,10 @@ OpenTelemetry has since decided that events are **log records with an event name
 - In Loki, events are found by body text (`|= "payment.completed"`) or by attribute (`event_domain="payments"`), not by event name, until Loki stores that field.
 - `DOMAIN_EVENTS.md` section 15 now describes this approach and points here.
 - The package is not on PyPI yet. Until it is published, users install it from GitHub, and `otelstarter init` does not add it.
+
+## Update, 2026-10-06 (SDK 0.2.0)
+
+Testing as a real user showed two gaps, now changed:
+
+- **Problems are logged, not raised as Python warnings.** They go on the `otelstarter` logger, pointing at the caller's line. Python warnings printed unformatted on stderr were easy to miss, and never reached the backend. The `OtelStarterWarning` class is removed; 0.1.0 had no known users.
+- **Events can be echoed to the terminal.** With `OTELSTARTER_CONSOLE_EVENTS=true`, which `otelstarter run` sets, each event also prints one line to stderr. The line is not exported, so each event is still sent exactly once.
