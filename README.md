@@ -4,12 +4,28 @@ OTelStarter is a command-line tool that adds production-quality observability to
 
 It is a thin layer around [OpenTelemetry](https://opentelemetry.io/), not an observability backend. Your application emits standard OpenTelemetry data and you choose where it goes.
 
-Target experience:
+```bash
+otelstarter init                      # add OpenTelemetry to your app
+otelstarter run -- uvicorn main:app   # start a local Collector + Grafana, then your app
+```
+
+**New here? Follow the [quickstart](docs/quickstart.md):** a Python app with traces, logs, metrics and business events in about 10 minutes.
+
+## Install
+
+Requires Go 1.25 or newer.
 
 ```bash
-otelstarter init
-otelstarter run
+go install github.com/IvyMurage/otelstarter/cmd/otelstarter@latest
 ```
+
+The program lands in `~/go/bin`. If `otelstarter` is then "command not found", add that folder to your `PATH`:
+
+```bash
+echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc   # or ~/.bashrc
+```
+
+`otelstarter run` also needs Docker, and Python apps need Python 3.10 or newer.
 
 ## Status
 
@@ -23,18 +39,17 @@ Early development. Working commands:
 
 Domain events for Python apps: `observability.event("payment.completed", domain="payments", outcome="success")`. See the [Python SDK](sdk/python/README.md).
 
-
 ## Build from source
 
-Requires Go 1.25 or newer.
+From a clone of this repository:
 
 ```bash
-go build -o otelstarter ./cmd/otelstarter
-./otelstarter help
+go install ./cmd/otelstarter    # or: go build -o otelstarter ./cmd/otelstarter
 ```
 
 ## Documentation
 
+- [Quickstart](docs/quickstart.md): from an app to traces, logs, metrics and events
 - [Architecture](docs/ARCHITECTURE.md): system design and boundaries
 - [Requirements](docs/REQUIREMENTS.md): what the product must do
 - [Engineering guidelines](docs/ENGINEERING_GUIDELINES.md): rules for contributors and AI agents
