@@ -54,6 +54,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Check the packaged LICENSE matches the repository's
+        run: cmp LICENSE ../../LICENSE
       - name: Install
         run: pip install -e '.[dev]'
       - name: Lint

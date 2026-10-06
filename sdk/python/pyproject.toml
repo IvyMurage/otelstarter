@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "otelstarter"
-version = "0.1.0"
+dynamic = ["version"] # read from src/otelstarter/__init__.py, the single source
 description = "Business-aware domain events for OpenTelemetry, from the otelstarter project."
 readme = "README.md"
 license = "Apache-2.0"
@@ -23,6 +23,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/IvyMurage/otelstarter"
+
+[tool.hatch.version]
+path = "src/otelstarter/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/otelstarter"]
