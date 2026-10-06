@@ -19,11 +19,11 @@ Each call emits **one OpenTelemetry log-based event**: a log record whose event 
 
 ## Install
 
-The package is not on PyPI yet. Install it from GitHub:
-
 ```bash
-pip install "otelstarter @ git+https://github.com/IvyMurage/otelstarter#subdirectory=sdk/python"
+pip install otelstarter
 ```
+
+`otelstarter init` adds it for you, pinned to the version it was tested with.
 
 It depends only on `opentelemetry-api`. Run your app with OpenTelemetry configured (for example via `otelstarter run -- <your command>`), or `event()` quietly does nothing.
 

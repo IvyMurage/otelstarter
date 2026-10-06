@@ -18,6 +18,7 @@ var basePackages = []project.Instrumentation{
 	{Package: "opentelemetry-exporter-otlp-proto-http", Purpose: "Sends telemetry to an OpenTelemetry Collector over HTTP"},
 	{Package: "opentelemetry-instrumentation-logging", Purpose: "Adds trace and span IDs to log records"},
 	{Package: "opentelemetry-instrumentation-system-metrics", Purpose: "Runtime metrics: CPU, memory, garbage collection"},
+	{Package: "otelstarter", Purpose: "Domain events: observability.event(\"order.created\", ...)"},
 }
 
 var categoryPurpose = map[string]string{
@@ -34,7 +35,7 @@ var categoryPurpose = map[string]string{
 // recommend returns the OpenTelemetry packages for the detected package
 // names, marking those already installed. It also returns a note for each
 // detected package that has no official instrumentation.
-func recommend(names, installed []string) ([]project.Instrumentation, []string) {
+func recommend(names, declared []string) ([]project.Instrumentation, []string) {
 	// Several detected packages can share one instrumentation package, for
 	// example SQLAlchemy and SQLModel. usedBy collects them per package.
 	usedBy := map[string][]string{}
@@ -64,7 +65,7 @@ func recommend(names, installed []string) ([]project.Instrumentation, []string) 
 		})
 	}
 	for i := range recs {
-		recs[i].Installed = slices.Contains(installed, recs[i].Package)
+		recs[i].Installed = slices.Contains(declared, recs[i].Package)
 	}
 	return recs, notes
 }

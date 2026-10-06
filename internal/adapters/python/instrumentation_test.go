@@ -19,6 +19,7 @@ func TestRecommend(t *testing.T) {
 		{Package: "opentelemetry-exporter-otlp-proto-http", Purpose: "Sends telemetry to an OpenTelemetry Collector over HTTP"},
 		{Package: "opentelemetry-instrumentation-logging", Purpose: "Adds trace and span IDs to log records"},
 		{Package: "opentelemetry-instrumentation-system-metrics", Purpose: "Runtime metrics: CPU, memory, garbage collection"},
+		{Package: "otelstarter", Purpose: "Domain events: observability.event(\"order.created\", ...)"},
 		{Package: "opentelemetry-instrumentation-asyncpg", Purpose: "Database queries (asyncpg)", Installed: true},
 		{Package: "opentelemetry-instrumentation-fastapi", Purpose: "Incoming HTTP requests: traces and request metrics (fastapi)"},
 		{Package: "opentelemetry-instrumentation-sqlalchemy", Purpose: "ORM queries (sqlalchemy, sqlmodel)"},

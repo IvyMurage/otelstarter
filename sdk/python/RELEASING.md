@@ -25,7 +25,7 @@ A pending publisher does not reserve the name. If someone else registers `otelst
 
 ## Each release
 
-1. Set the new version in `src/otelstarter/__init__.py`. It is the only place the version lives.
+1. Set the new version in `src/otelstarter/__init__.py`, the package's only version declaration. Also set `otelstarterVersion` in `internal/adapters/python/setup.go`, the version `otelstarter init` pins. A Go test fails if the two differ.
 2. Add the release to `CHANGELOG.md`.
 3. Merge to `main`, then tag that commit and push the tag:
 

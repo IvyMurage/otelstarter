@@ -33,7 +33,7 @@ Project: /home/dev/shop (Python, FastAPI, pip)
 
 Files to change:
   create  otel.env           OpenTelemetry settings for this service
-  update  requirements.txt   add 6 OpenTelemetry packages in a block marked "otelstarter"
+  update  requirements.txt   add 7 packages in a block marked "otelstarter"
 
 otel.env (new file):
   | ...

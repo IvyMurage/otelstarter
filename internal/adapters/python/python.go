@@ -120,7 +120,9 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	lang.Pins = openTelemetryPins(reqs)
 
 	var notes []string
-	lang.Instrumentation, notes = recommend(names, lang.OpenTelemetry)
+	// Every declared package counts, not only opentelemetry-* ones: the
+	// otelstarter SDK is recommended too, and must be seen once added.
+	lang.Instrumentation, notes = recommend(names, names)
 	lang.Notes = append(lang.Notes, notes...)
 	lang.Notes = append(lang.Notes, runNotes(lang.Frameworks)...)
 	lang.Activation = "opentelemetry-instrument " + exampleStartCommand(lang.Frameworks)

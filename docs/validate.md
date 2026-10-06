@@ -30,7 +30,7 @@ $ otelstarter validate
       Fix: Add OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf to otel.env.
   ✓ Endpoint: http://localhost:4318
   ✓ Collector at http://localhost:4318 accepts traces, metrics and logs
-  ✓ All 6 recommended packages are declared
+  ✓ All 7 recommended packages are declared
   ✓ opentelemetry-instrument: /home/dev/shop/.venv/bin/opentelemetry-instrument
 
 1 problem, 0 warnings.

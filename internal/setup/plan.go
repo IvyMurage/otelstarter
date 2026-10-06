@@ -25,7 +25,7 @@ const EnvFileName = "otel.env"
 // Change is one file that Apply will create or update.
 type Change struct {
 	Path    string   // relative to the project folder
-	Summary string   // one line, e.g. "add 6 OpenTelemetry packages"
+	Summary string   // one line, e.g. "add 7 packages in a block marked ..."
 	Preview []string // lines shown to the user before they confirm
 
 	isNew    bool
@@ -163,7 +163,7 @@ func planPackages(plan *Plan, fsys fs.FS, lang project.Language) error {
 		}
 		plan.Changes = append(plan.Changes, Change{
 			Path:     "requirements.txt",
-			Summary:  fmt.Sprintf("add %d OpenTelemetry packages in a block marked \"otelstarter\"", len(reqs)),
+			Summary:  fmt.Sprintf("add %d packages in a block marked \"otelstarter\"", len(reqs)),
 			Preview:  reqs,
 			original: existing,
 			content:  []byte(python.AddToRequirements(string(existing), reqs)),

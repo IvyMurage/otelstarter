@@ -14,6 +14,10 @@ import (
 const (
 	contribVersion = "0.66b0"
 	sdkVersion     = "1.45.0"
+
+	// otelstarterVersion is the domain-event SDK in sdk/python, published to
+	// PyPI. A test keeps it equal to sdk/python/src/otelstarter/__init__.py.
+	otelstarterVersion = "0.1.0"
 )
 
 // Markers around the block otelstarter adds to requirements.txt. Removing
@@ -51,6 +55,9 @@ func MissingRequirements(lang project.Language) []string {
 }
 
 func pinnedVersion(pkg string) string {
+	if pkg == "otelstarter" {
+		return otelstarterVersion
+	}
 	if strings.HasPrefix(pkg, "opentelemetry-exporter-") {
 		return sdkVersion
 	}
