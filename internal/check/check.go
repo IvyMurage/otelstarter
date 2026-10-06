@@ -81,6 +81,7 @@ func Run(ctx context.Context, opts Options) []Result {
 	}
 
 	add(checkPackages(lang)...)
+	add(checkVersions(lang)...)
 	add(checkLauncher())
 	return results
 }
