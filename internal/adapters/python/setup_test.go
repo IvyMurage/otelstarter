@@ -1,7 +1,9 @@
 package python
 
 import (
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/IvyMurage/otelstarter/internal/project"
@@ -118,5 +120,18 @@ func TestEnvVarsAvoidDeprecatedLoggingSwitch(t *testing.T) {
 			t.Error("OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED is deprecated and stops " +
 				"opentelemetry-instrumentation-logging from installing its own log handler")
 		}
+	}
+}
+
+// init pins the SDK at otelstarterVersion, so it must be a version that the
+// SDK in this repository declares (and that is released with it).
+func TestOtelstarterVersionMatchesSDK(t *testing.T) {
+	data, err := os.ReadFile("../../../sdk/python/src/otelstarter/__init__.py")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `__version__ = "` + otelstarterVersion + `"`
+	if !strings.Contains(string(data), want) {
+		t.Errorf("sdk/python/src/otelstarter/__init__.py does not contain %s; update otelstarterVersion in setup.go", want)
 	}
 }
