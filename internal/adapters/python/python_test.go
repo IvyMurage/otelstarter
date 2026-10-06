@@ -209,3 +209,45 @@ func TestAnalyzeReadsAppName(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRequirement(t *testing.T) {
+	tests := []struct {
+		in   string
+		want requirement
+	}{
+		{"opentelemetry-distro==0.66b0", requirement{"opentelemetry-distro", "0.66b0"}},
+		{"Flask[async] == 3.0.3 ; python_version >= '3.10'", requirement{"flask", "3.0.3"}},
+		{"redis==5.0.1,<6", requirement{"redis", "5.0.1"}},
+		{"httpx>=0.27", requirement{"httpx", ""}},
+		{"httpx==0.27.*", requirement{"httpx", ""}},  // a wildcard is a range, not a pin
+		{"httpx===0.27.0", requirement{"httpx", ""}}, // arbitrary equality is not a normal pin
+		{"fastapi", requirement{"fastapi", ""}},
+		{"pika *", requirement{"pika", ""}}, // how Pipfile's "*" reaches the parser
+	}
+	for _, tt := range tests {
+		if got := parseRequirement(tt.in); got != tt.want {
+			t.Errorf("parseRequirement(%q) = %+v, want %+v", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestAnalyzeRecordsOpenTelemetryPins(t *testing.T) {
+	lang, err := Analyze(files(map[string]string{
+		"requirements.txt": "fastapi==0.115.0\nopentelemetry-distro==0.66b0\nopentelemetry-sdk>=1.40\n",
+		"Pipfile": "[packages]\nopentelemetry-instrumentation-fastapi = \"==0.60b0\"\n" +
+			"opentelemetry-exporter-otlp-proto-http = {version = \"==1.45.0\"}\n",
+		"pyproject.toml": "[project]\ndependencies = [\"opentelemetry-distro==0.66b0\"]\n", // same pin twice: listed once
+	}))
+	if err != nil {
+		t.Fatalf("Analyze() error = %v", err)
+	}
+
+	want := []project.Pin{
+		{Package: "opentelemetry-distro", Version: "0.66b0"},
+		{Package: "opentelemetry-exporter-otlp-proto-http", Version: "1.45.0"},
+		{Package: "opentelemetry-instrumentation-fastapi", Version: "0.60b0"},
+	}
+	if !reflect.DeepEqual(lang.Pins, want) {
+		t.Errorf("Pins = %+v, want %+v", lang.Pins, want)
+	}
+}

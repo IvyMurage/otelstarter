@@ -22,6 +22,7 @@ type Language struct {
 	Frameworks     []string
 	Dependencies   []Dependency
 	OpenTelemetry  []string // OpenTelemetry packages already installed
+	Pins           []Pin    // exact versions declared for OpenTelemetry packages
 
 	// Instrumentation lists the OpenTelemetry packages the project should
 	// have, and Activation shows how to switch them on, e.g.
@@ -56,4 +57,11 @@ type EnvVar struct {
 	Name    string
 	Value   string
 	Comment string // one line shown above the setting, explaining it
+}
+
+// Pin is a package declared with an exact version, such as
+// opentelemetry-distro==0.66b0.
+type Pin struct {
+	Package string
+	Version string
 }

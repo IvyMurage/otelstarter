@@ -70,7 +70,7 @@ var knownPackages = map[string]knownPackage{
 func Analyze(fsys fs.FS) (project.Language, error) {
 	lang := project.Language{Name: "Python", DependenciesDetected: true}
 
-	var names []string
+	var reqs []requirement
 	usesPoetry := false
 	readAny := false
 
@@ -81,7 +81,7 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 		if err != nil {
 			return lang, err
 		}
-		names = append(names, py.dependencies...)
+		reqs = append(reqs, py.dependencies...)
 		usesPoetry = py.usesPoetry
 		lang.AppName = py.name
 		readAny = true
@@ -90,7 +90,7 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	if data, ok, err := readManifest(fsys, "requirements.txt"); err != nil {
 		return lang, err
 	} else if ok {
-		names = append(names, parseRequirements(data)...)
+		reqs = append(reqs, parseRequirements(data)...)
 		readAny = true
 	}
 
@@ -101,7 +101,7 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 		if err != nil {
 			return lang, err
 		}
-		names = append(names, deps...)
+		reqs = append(reqs, deps...)
 		readAny = true
 	}
 
@@ -111,8 +111,13 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 				"List your dependencies in pyproject.toml or requirements.txt so they can be detected.")
 	}
 
+	names := make([]string, len(reqs))
+	for i, r := range reqs {
+		names[i] = r.name
+	}
 	lang.PackageManager = packageManager(fsys, usesPoetry)
 	lang.Frameworks, lang.Dependencies, lang.OpenTelemetry = classify(names)
+	lang.Pins = openTelemetryPins(reqs)
 
 	var notes []string
 	lang.Instrumentation, notes = recommend(names, lang.OpenTelemetry)
@@ -150,7 +155,7 @@ func fileExists(fsys fs.FS, name string) bool {
 // pyproject is what otelstarter needs from a pyproject.toml file.
 type pyproject struct {
 	name         string
-	dependencies []string
+	dependencies []requirement
 	usesPoetry   bool
 }
 
@@ -178,7 +183,7 @@ func parsePyproject(data []byte) (pyproject, error) {
 
 	result := pyproject{name: doc.Project.Name}
 	for _, req := range doc.Project.Dependencies {
-		result.dependencies = append(result.dependencies, requirementName(req))
+		result.dependencies = append(result.dependencies, parseRequirement(req))
 	}
 
 	if doc.Tool.Poetry != nil {
@@ -188,14 +193,15 @@ func parsePyproject(data []byte) (pyproject, error) {
 		}
 		for name := range doc.Tool.Poetry.Dependencies {
 			if name != "python" { // Poetry lists the interpreter version here too
-				result.dependencies = append(result.dependencies, normalize(name))
+				// Poetry versions are usually ranges like "^5.0", so no pin is read.
+				result.dependencies = append(result.dependencies, requirement{name: normalize(name)})
 			}
 		}
 	}
 	return result, nil
 }
 
-func parsePipfile(data []byte) ([]string, error) {
+func parsePipfile(data []byte) ([]requirement, error) {
 	var doc struct {
 		Packages map[string]any `toml:"packages"`
 	}
@@ -203,15 +209,24 @@ func parsePipfile(data []byte) ([]string, error) {
 		return nil, fmt.Errorf("Pipfile is not valid TOML: %w. "+
 			"Fix the syntax error and run otelstarter again", err)
 	}
-	var names []string
-	for name := range doc.Packages {
-		names = append(names, normalize(name))
+	var reqs []requirement
+	for name, spec := range doc.Packages {
+		// A value is either a string like "==1.0" or "*", or a table with a
+		// version key; a type switch handles each shape.
+		var version string
+		switch v := spec.(type) {
+		case string:
+			version = v
+		case map[string]any:
+			version, _ = v["version"].(string)
+		}
+		reqs = append(reqs, parseRequirement(name+" "+version)) // the space ends the name, so "*" is not read as part of it
 	}
-	return names, nil
+	return reqs, nil
 }
 
-func parseRequirements(data []byte) []string {
-	var names []string
+func parseRequirements(data []byte) []requirement {
+	var reqs []requirement
 	for _, line := range strings.Split(string(data), "\n") {
 		line, _, _ = strings.Cut(line, "#")
 		line = strings.TrimSpace(line)
@@ -219,19 +234,68 @@ func parseRequirements(data []byte) []string {
 		if line == "" || strings.HasPrefix(line, "-") {
 			continue
 		}
-		names = append(names, requirementName(line))
+		reqs = append(reqs, parseRequirement(line))
 	}
-	return names
+	return reqs
 }
 
-// requirementName extracts the package name from a requirement such as
-// "fastapi[all]>=0.110 ; python_version >= '3.9'".
-func requirementName(req string) string {
+// requirement is one declared dependency.
+type requirement struct {
+	name string // normalised package name
+	pin  string // exact version when declared as name==version, else ""
+}
+
+// parseRequirement reads a requirement such as
+// "fastapi[all]==0.115.0 ; python_version >= '3.9'". Only an exact "=="
+// version counts as a pin: ranges, wildcards and "===" do not.
+func parseRequirement(req string) requirement {
 	req = strings.TrimSpace(req)
-	if end := strings.IndexAny(req, " \t[<>=!~;@,("); end >= 0 {
-		req = req[:end]
+	end := strings.IndexAny(req, " \t[<>=!~;@,(")
+	if end < 0 {
+		return requirement{name: normalize(req)}
 	}
-	return normalize(req)
+	r := requirement{name: normalize(req[:end])}
+
+	rest := req[end:]
+	if strings.HasPrefix(rest, "[") { // skip extras like [all]
+		if i := strings.Index(rest, "]"); i >= 0 {
+			rest = rest[i+1:]
+		}
+	}
+	rest = strings.TrimSpace(rest)
+	if strings.HasPrefix(rest, "==") && !strings.HasPrefix(rest, "===") {
+		version := strings.TrimSpace(rest[2:]) // pip allows "== 3.0.3"
+		if i := strings.IndexAny(version, " \t;,"); i >= 0 {
+			version = version[:i]
+		}
+		if version = strings.TrimSpace(version); version != "" && !strings.Contains(version, "*") {
+			r.pin = version
+		}
+	}
+	return r
+}
+
+// openTelemetryPins returns the exact versions declared for OpenTelemetry
+// packages. The same pin from two manifests is listed once; different pins
+// for one package are both kept, because that is itself a mismatch.
+func openTelemetryPins(reqs []requirement) []project.Pin {
+	seen := map[project.Pin]bool{}
+	var pins []project.Pin
+	for _, r := range reqs {
+		pin := project.Pin{Package: r.name, Version: r.pin}
+		if r.pin == "" || !strings.HasPrefix(r.name, "opentelemetry-") || seen[pin] {
+			continue
+		}
+		seen[pin] = true
+		pins = append(pins, pin)
+	}
+	sort.Slice(pins, func(i, j int) bool {
+		if pins[i].Package != pins[j].Package {
+			return pins[i].Package < pins[j].Package
+		}
+		return pins[i].Version < pins[j].Version
+	})
+	return pins
 }
 
 // normalize applies the PEP 503 rule so "Flask_SQLAlchemy" and

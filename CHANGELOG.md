@@ -6,6 +6,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `validate` and `doctor` check that OpenTelemetry packages pinned with `==` belong together: all beta packages (`0.NNbN`) at one version, all stable ones (`1.NN.N`) at another.
 - Python domain-event SDK (`sdk/python`, package `otelstarter`): `observability.event(name, domain=, operation=, outcome=, entity_type=, entity_id=)` emits one OpenTelemetry log-based event linked to the current trace. No payloads, never raises, depends only on `opentelemetry-api`. Not yet on PyPI.
 - `otelstarter validate [--offline] [path]` and `otelstarter doctor [path]`: one set of checks (project, `otel.env`, protocol, endpoint, deprecated settings, secrets, Collector reachability, declared packages, launcher on PATH), each problem with why and fix. `validate` exits 1 on failure; `doctor` adds an environment report with secrets hidden.
 - `otelstarter run [-- <app command>]`: starts a local OpenTelemetry Collector and Grafana LGTM (Tempo, Loki, Prometheus) in Docker, and optionally your app with `otel.env` loaded and `opentelemetry-instrument` added. Ctrl+C stops everything. The Collector drops FastAPI's per-request ASGI send/receive spans.

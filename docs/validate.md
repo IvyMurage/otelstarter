@@ -51,6 +51,7 @@ $ otelstarter validate
 | Secrets | A setting looks like a secret: names containing `TOKEN`, `SECRET`, `PASSWORD`, `API_KEY` and similar, or OTLP headers carrying `Authorization` or an API key (warning) |
 | Collector | The endpoint does not accept OTLP on `/v1/traces`, `/v1/metrics` and `/v1/logs`. Skipped with `--offline` |
 | Packages | `opentelemetry-distro` or the OTLP exporter is not declared (problem); another recommended instrumentation is not declared (warning) |
+| Versions | OpenTelemetry packages pinned with `==` disagree within a version family: beta packages (`0.NNbN`: distro, instrumentation) must all match, as must stable ones (`1.NN.N`: API, SDK, exporters) |
 | Launcher | `opentelemetry-instrument` is not on `PATH`, usually because the virtual environment is not active (warning) |
 
 The Collector check sends an **empty** export request (`{}`) for each signal. A Collector answers `200` and stores nothing, so it adds no test data to your backend.
@@ -78,6 +79,6 @@ otel.env:
 
 - **Python projects only.**
 - **Packages are checked as declared in the manifest, not as installed.** otelstarter never runs pip. The launcher check is the hint that they are installed in the active environment.
-- **Package versions are not compared yet.** pip refuses most conflicting pins at install time.
+- **Only exact `==` pins are compared.** Ranges such as `>=1.40` and Poetry's `^` versions are not checked.
 - **Signal-specific endpoints** (`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` and so on) are not checked.
 - **Secret detection is a heuristic.** It catches common names and headers, not every secret.

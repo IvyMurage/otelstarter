@@ -118,3 +118,10 @@ func WrapCommand(command []string) ([]string, bool) {
 func Essential(pkg string) bool {
 	return pkg == "opentelemetry-distro" || pkg == "opentelemetry-exporter-otlp-proto-http"
 }
+
+// TestedVersions returns the version set otelstarter pins and tests with:
+// one for beta packages (distro, instrumentation-*) and one for stable
+// packages (API, SDK, exporters).
+func TestedVersions() (beta, stable string) {
+	return contribVersion, sdkVersion
+}

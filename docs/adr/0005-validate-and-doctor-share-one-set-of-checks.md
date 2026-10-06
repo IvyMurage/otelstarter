@@ -33,3 +33,7 @@ The requirements need `otelstarter validate` to cover dependencies, configuratio
 - A new check is written once and shows up in both commands.
 - `validate` in CI needs `--offline` unless a Collector runs in the job.
 - Secret detection is heuristic and may miss unusual names.
+
+## Update, 2026-10-06
+
+The version check deferred above has been added. It compares exact `==` pins within each OpenTelemetry version family (beta `0.NNbN`, stable `1.NN.N`), grouped by version shape rather than package name.
