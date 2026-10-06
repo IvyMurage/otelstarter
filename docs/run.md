@@ -60,6 +60,25 @@ Open Grafana, go to **Explore** and pick:
 - **Loki** for logs. Each log line carries `trace_id` and `span_id`.
 - **Prometheus** for metrics, such as `http_server_duration_milliseconds_count`.
 
+## Developing with reload
+
+**FastAPI / uvicorn:** add `--reload`. Uvicorn restarts the app when a file changes, and instrumentation keeps working after each reload (checked with uvicorn's StatReload):
+
+```bash
+otelstarter run -- uvicorn main:app --reload
+```
+
+**Flask:** don't use debug mode's reloader. OpenTelemetry's documentation says it stops instrumentation from loading. Restart the app yourself after changes.
+
+**Django:** `runserver`'s autoreloader has not been tested with otelstarter yet.
+
+**Keep the stack between restarts.** Run the stack and the app in separate terminals. Restarting the app then never restarts the stack, and what you collected in Grafana stays:
+
+```bash
+otelstarter run                                  # terminal 1: stack only
+otelstarter run -- uvicorn main:app --reload     # terminal 2: shares that stack
+```
+
 ## What runs
 
 | Container | Image | Ports (127.0.0.1 only) |

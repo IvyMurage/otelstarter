@@ -278,14 +278,15 @@ func parseRequirement(req string) requirement {
 }
 
 // openTelemetryPins returns the exact versions declared for OpenTelemetry
-// packages. The same pin from two manifests is listed once; different pins
+// packages and the otelstarter SDK. The same pin from two manifests is listed once; different pins
 // for one package are both kept, because that is itself a mismatch.
 func openTelemetryPins(reqs []requirement) []project.Pin {
 	seen := map[project.Pin]bool{}
 	var pins []project.Pin
 	for _, r := range reqs {
 		pin := project.Pin{Package: r.name, Version: r.pin}
-		if r.pin == "" || !strings.HasPrefix(r.name, "opentelemetry-") || seen[pin] {
+		relevant := strings.HasPrefix(r.name, "opentelemetry-") || r.name == "otelstarter"
+		if r.pin == "" || !relevant || seen[pin] {
 			continue
 		}
 		seen[pin] = true

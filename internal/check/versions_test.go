@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/project"
 )
 
@@ -80,5 +81,51 @@ func TestCheckVersions(t *testing.T) {
 				t.Errorf("fix = %q, want it to name the tested version", results[0].Fix)
 			}
 		})
+	}
+}
+
+func TestOlderVersion(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"0.1.0", "0.2.0", true},
+		{"0.2.0", "0.2.0", false},
+		{"0.3.0", "0.2.0", false},
+		{"0.2.0", "0.10.0", true}, // compared as numbers, not text
+		{"1.0", "1.0.1", true},
+		{"0.2.0rc1", "0.3.0", false}, // not a plain release: never reported
+	}
+	for _, tt := range tests {
+		if got := olderVersion(tt.a, tt.b); got != tt.want {
+			t.Errorf("olderVersion(%q, %q) = %v, want %v", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func TestCheckSDKVersion(t *testing.T) {
+	current := python.TestedSDKVersion()
+
+	if got := checkSDKVersion(pins("otelstarter", "0.0.1")); len(got) != 1 || got[0].Status != Warn ||
+		!strings.Contains(got[0].Fix, "otelstarter=="+current) {
+		t.Errorf("old pin: got %+v, want a warning whose fix names otelstarter==%s", got, current)
+	}
+	for _, v := range []string{current, "99.0.0"} {
+		if got := checkSDKVersion(pins("otelstarter", v)); len(got) != 0 {
+			t.Errorf("pin %s: got %+v, want nothing", v, got)
+		}
+	}
+	if got := checkSDKVersion(pins()); len(got) != 0 {
+		t.Errorf("no pin: got %+v, want nothing", got)
+	}
+}
+
+// The SDK's 0.x version must not be mistaken for an OpenTelemetry beta
+// package pinned to a different version.
+func TestCheckVersionsIgnoresTheSDK(t *testing.T) {
+	results := checkVersions(pins("opentelemetry-distro", "0.66b0", "otelstarter", "0.2.0"))
+
+	if len(results) != 1 || results[0].Status != Pass {
+		t.Errorf("checkVersions() = %+v, want a single pass", results)
 	}
 }

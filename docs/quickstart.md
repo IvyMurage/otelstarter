@@ -77,7 +77,7 @@ Expect one problem: *Nothing is listening at http://localhost:4318*. The next st
 otelstarter run -- uvicorn main:app
 ```
 
-This starts the local stack, then your app with instrumentation. In a second terminal, send some traffic:
+This starts the local stack, then your app with instrumentation. Add `--reload` to restart the app automatically when you edit a file (see [run](run.md#developing-with-reload)). In a second terminal, send some traffic:
 
 ```bash
 for i in $(seq 10); do curl -s -X POST localhost:8000/orders; echo; done

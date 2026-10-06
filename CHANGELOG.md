@@ -6,6 +6,9 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `validate` warns when the `otelstarter` SDK is pinned to an older version than the one `init` now pins.
+- `docs/performance.md`: first measured footprint and overhead baseline, plus how to sample traces in production.
+- `docs/run.md`: developing with reload (`uvicorn --reload` works under instrumentation; Flask's debug reloader does not), and sharing one stack between terminals.
 - `docs/quickstart.md`, and install instructions in the README, including adding `~/go/bin` to `PATH`.
 - `run` shares a stack that is already running (for example `otelstarter run` in another terminal), instead of removing its containers.
 - `validate` and `doctor` check the Python version that will run the app (3.10+ required). It prefers the virtual environment's interpreter, and runs in the project folder so pyenv's `.python-version` applies.

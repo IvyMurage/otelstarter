@@ -53,6 +53,7 @@ $ otelstarter validate
 | Packages | `opentelemetry-distro` or the OTLP exporter is not declared (problem); another recommended instrumentation is not declared (warning) |
 | Versions | OpenTelemetry packages pinned with `==` disagree within a version family: beta packages (`0.NNbN`: distro, instrumentation) must all match, as must stable ones (`1.NN.N`: API, SDK, exporters) |
 | Python | The Python that will run the app is older than 3.10. That is the one next to `opentelemetry-instrument` if found, else `python3` or `python` on PATH. It runs `--version` in the project folder, so pyenv's `.python-version` applies |
+| SDK version | `otelstarter` is pinned to an older version than the one this otelstarter pins (warning). `init` adds missing packages but does not change existing pins |
 | Launcher | `opentelemetry-instrument` is not on `PATH`, usually because the virtual environment is not active (warning) |
 
 The Collector check sends an **empty** export request (`{}`) for each signal. A Collector answers `200` and stores nothing, so it adds no test data to your backend.
