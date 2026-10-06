@@ -50,6 +50,7 @@ go install ./cmd/otelstarter    # or: go build -o otelstarter ./cmd/otelstarter
 ## Documentation
 
 - [Quickstart](docs/quickstart.md): from an app to traces, logs, metrics and events
+- [Performance](docs/performance.md): what otelstarter and instrumentation cost
 - [Architecture](docs/ARCHITECTURE.md): system design and boundaries
 - [Requirements](docs/REQUIREMENTS.md): what the product must do
 - [Engineering guidelines](docs/ENGINEERING_GUIDELINES.md): rules for contributors and AI agents

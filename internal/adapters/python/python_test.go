@@ -236,7 +236,7 @@ func TestAnalyzeRecordsOpenTelemetryPins(t *testing.T) {
 		"requirements.txt": "fastapi==0.115.0\nopentelemetry-distro==0.66b0\nopentelemetry-sdk>=1.40\n",
 		"Pipfile": "[packages]\nopentelemetry-instrumentation-fastapi = \"==0.60b0\"\n" +
 			"opentelemetry-exporter-otlp-proto-http = {version = \"==1.45.0\"}\n",
-		"pyproject.toml": "[project]\ndependencies = [\"opentelemetry-distro==0.66b0\"]\n", // same pin twice: listed once
+		"pyproject.toml": "[project]\ndependencies = [\"opentelemetry-distro==0.66b0\", \"otelstarter==0.1.0\"]\n", // distro pin twice: listed once
 	}))
 	if err != nil {
 		t.Fatalf("Analyze() error = %v", err)
@@ -246,6 +246,7 @@ func TestAnalyzeRecordsOpenTelemetryPins(t *testing.T) {
 		{Package: "opentelemetry-distro", Version: "0.66b0"},
 		{Package: "opentelemetry-exporter-otlp-proto-http", Version: "1.45.0"},
 		{Package: "opentelemetry-instrumentation-fastapi", Version: "0.60b0"},
+		{Package: "otelstarter", Version: "0.1.0"},
 	}
 	if !reflect.DeepEqual(lang.Pins, want) {
 		t.Errorf("Pins = %+v, want %+v", lang.Pins, want)

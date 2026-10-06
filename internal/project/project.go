@@ -22,7 +22,7 @@ type Language struct {
 	Frameworks     []string
 	Dependencies   []Dependency
 	OpenTelemetry  []string // OpenTelemetry packages already installed
-	Pins           []Pin    // exact versions declared for OpenTelemetry packages
+	Pins           []Pin    // exact versions declared for OpenTelemetry packages and the otelstarter SDK
 
 	// Instrumentation lists the OpenTelemetry packages the project should
 	// have, and Activation shows how to switch them on, e.g.

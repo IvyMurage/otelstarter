@@ -126,6 +126,11 @@ func Essential(pkg string) bool {
 	return pkg == "opentelemetry-distro" || pkg == "opentelemetry-exporter-otlp-proto-http"
 }
 
+// TestedSDKVersion returns the otelstarter SDK version that init pins.
+func TestedSDKVersion() string {
+	return otelstarterVersion
+}
+
 // TestedVersions returns the version set otelstarter pins and tests with:
 // one for beta packages (distro, instrumentation-*) and one for stable
 // packages (API, SDK, exporters).

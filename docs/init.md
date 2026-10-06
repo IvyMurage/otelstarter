@@ -102,11 +102,21 @@ If you add a library later (for example Redis), running `init` again adds only i
 
 OpenTelemetry's Python packages require each other at exact versions, so otelstarter pins a set it has tested together: `0.66b0` for the distro and instrumentation packages, and `1.45.0` for the exporter. If the project already lists OpenTelemetry packages at other versions, `init` warns you to align them.
 
+## Production
+
+`otel.env` is set up for local development: it records every trace and sends to `localhost`. For other environments:
+- set `OTEL_EXPORTER_OTLP_ENDPOINT` to your Collector
+- set `OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=<env>`
+- consider sampling traces to reduce cost, for example `OTEL_TRACES_SAMPLER=parentbased_traceidratio` with `OTEL_TRACES_SAMPLER_ARG=0.1`
+
+See [performance](performance.md) for what instrumentation costs.
+
 ## Limitations
 
 - Python only for now. Node.js and Go projects get a clear error.
 - **Start the app with `otel.env` loaded.** [`otelstarter run -- <command>`](run.md) does this for you. Without Docker, load it yourself: `set -a && . ./otel.env && set +a && opentelemetry-instrument <command>`. Without `otel.env`, the SDK looks for the gRPC exporter, which is not installed. The app keeps working, but OpenTelemetry prints `Configuration of configurator failed` and sends nothing.
 - `init` does not install packages or run your package manager. You run the printed command.
+- `init` adds missing packages but **does not change versions already pinned**. `otelstarter validate` warns when the `otelstarter` SDK pin is older than the current one.
 - A project whose dependencies live only in `setup.py` gets a `pip install …` command. Add the packages to your dependency list yourself.
 
 ## Security and privacy

@@ -3,6 +3,7 @@ package check
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
@@ -33,6 +34,9 @@ func checkVersions(lang project.Language) []Result {
 		{name: "stable", tested: testedStable},
 	}
 	for _, pin := range lang.Pins {
+		if pin.Package == "otelstarter" {
+			continue // the SDK has its own versions; see checkSDKVersion
+		}
 		i := 1
 		if strings.HasPrefix(pin.Version, "0.") {
 			i = 0
@@ -90,4 +94,44 @@ func byVersion(pins []project.Pin, versions []string) string {
 		parts = append(parts, fmt.Sprintf("%s (%s)", v, who))
 	}
 	return strings.Join(parts, ", ")
+}
+
+// checkSDKVersion warns when the otelstarter SDK is pinned to a version older
+// than the one this otelstarter pins. init adds missing packages but does not
+// change existing pins, so an older pin stays until someone updates it.
+func checkSDKVersion(lang project.Language) []Result {
+	tested := python.TestedSDKVersion()
+	for _, pin := range lang.Pins {
+		if pin.Package != "otelstarter" || !olderVersion(pin.Version, tested) {
+			continue
+		}
+		return []Result{warn(
+			fmt.Sprintf("otelstarter==%s is older than %s, the version this otelstarter pins", pin.Version, tested),
+			"Newer SDK versions fix problems and add features, such as printing events to the terminal during otelstarter run.",
+			fmt.Sprintf("Change the pin to otelstarter==%s and reinstall your requirements.", tested))}
+	}
+	return nil
+}
+
+// olderVersion reports whether version a is older than b. Both are plain
+// release versions such as 0.1.0; anything else is never reported as older.
+func olderVersion(a, b string) bool {
+	pa, okA := parseRelease(a)
+	pb, okB := parseRelease(b)
+	if !okA || !okB {
+		return false
+	}
+	return slices.Compare(pa, pb) < 0
+}
+
+func parseRelease(v string) ([]int, bool) {
+	var parts []int
+	for _, field := range strings.Split(v, ".") {
+		n, err := strconv.Atoi(field)
+		if err != nil {
+			return nil, false
+		}
+		parts = append(parts, n)
+	}
+	return parts, len(parts) > 0
 }
