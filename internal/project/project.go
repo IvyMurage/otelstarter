@@ -30,6 +30,10 @@ type Language struct {
 	Instrumentation []Instrumentation
 	Activation      string
 
+	// Enabled lists the instrumentations to switch on, for languages where
+	// one package bundles many (Node.js), e.g. "express", "pg".
+	Enabled []string
+
 	// DependenciesDetected is false when no adapter supports this language
 	// yet, so "found nothing" is never confused with "did not look".
 	DependenciesDetected bool

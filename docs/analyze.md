@@ -61,7 +61,7 @@ Exit codes: `0` when a project was analysed, `1` when no supported project was f
 | Language | Identified by | Dependency detection |
 |----------|---------------|----------------------|
 | Python | `pyproject.toml`, `requirements.txt`, `Pipfile`, `setup.py` | Yes |
-| Node.js | `package.json` | Not yet |
+| Node.js | `package.json` | Yes |
 | Go | `go.mod` | Not yet |
 
 Python details:
@@ -70,6 +70,24 @@ Python details:
 - **Package manager:** taken from the lock file (`uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock`), else from the manifest.
 - **Frameworks:** FastAPI, Flask, Django.
 - **Dependencies:** PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, HTTP clients, ORMs, Celery. The full list is in `internal/adapters/python/python.go`.
+
+Node.js details:
+
+- **Manifest read:** `dependencies` in `package.json`. `devDependencies` are ignored.
+- **Package manager:** taken from the lock file (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `package-lock.json`); npm when there is none.
+- **Frameworks:** Express, NestJS, Koa, hapi, Fastify.
+- **Dependencies:** PostgreSQL, MySQL, Redis, MongoDB, Kafka, RabbitMQ, knex, Prisma, GraphQL, axios, and the logging libraries pino, winston and bunyan.
+
+## Recommended instrumentation (Node.js)
+
+Node.js apps get two packages: `@opentelemetry/api`, and `@opentelemetry/auto-instrumentations-node`, which bundles instrumentation for about 40 libraries and loads with zero code changes through `--require`.
+
+**Only what the app uses is switched on.** `analyze` lists the instrumentations to enable: always `http`, `undici` (for `fetch`) and `runtime-node`, plus one per detected library, for example `http, undici, runtime-node, express, pg, pino`. `init` will set this list as `OTEL_NODE_ENABLED_INSTRUMENTATIONS`, so the other instrumentations are never loaded.
+
+Notes explain the gaps:
+- **No logging library.** OpenTelemetry for Node does not export `console.log`; logs reach the backend only through pino, winston or bunyan.
+- **ES-module apps** (`"type": "module"`) are not supported yet.
+- **Fastify and Prisma** need their own instrumentation packages (`@fastify/otel`, `@prisma/instrumentation`).
 
 ## Recommended instrumentation (Python)
 

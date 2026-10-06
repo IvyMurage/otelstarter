@@ -6,6 +6,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `analyze` supports Node.js: frameworks, libraries, logging library, package manager and ES-module apps from `package.json`. It recommends `@opentelemetry/auto-instrumentations-node` with only the detected instrumentations enabled.
 - `validate` warns when the `otelstarter` SDK is pinned to an older version than the one `init` now pins.
 - `docs/performance.md`: first measured footprint and overhead baseline, plus how to sample traces in production.
 - `docs/run.md`: developing with reload (`uvicorn --reload` works under instrumentation; Flask's debug reloader does not), and sharing one stack between terminals.
