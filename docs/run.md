@@ -31,7 +31,11 @@ With `--`, run:
 1. Reads `otel.env` from the current folder. Variables already set in your shell win, so `OTEL_SERVICE_NAME=test otelstarter run -- …` works.
 2. For Python, puts `opentelemetry-instrument` in front of your command, unless it is already in it.
 3. Starts the stack and waits until it is ready, so no early telemetry is lost.
-4. Starts your app. When the app exits, or you press Ctrl+C, the stack is stopped.
+4. Starts your app, with `OTELSTARTER_CONSOLE_EVENTS=true` so domain events also print a line to the terminal (otelstarter SDK 0.2.0+).
+5. **When you press Ctrl+C,** stops your app and then the stack.
+6. **When your app exits by itself,** for example after crashing on startup, keeps the stack running and says so, so the crash's telemetry can still be explored in Grafana. Press Ctrl+C to stop the stack. Without a terminal (scripts, CI), the stack stops when the app exits, and `run` exits with the app's error.
+
+**If a stack is already running**, because `otelstarter run` is open in another terminal, `run` uses it instead of starting another. It starts only your app, and leaves stopping the stack to the terminal that started it.
 
 Activate your virtual environment first, so `opentelemetry-instrument` and your app's command are found. With uv, put `opentelemetry-instrument` in the command yourself: `otelstarter run -- uv run opentelemetry-instrument uvicorn main:app`.
 
@@ -79,7 +83,7 @@ The generated `compose.yaml` and `collector.yaml` live in your cache folder (sho
 - **Telemetry is discarded when the stack stops.** It is for local development, not for keeping data.
 - **Python apps send metrics every 60 seconds by default,** so metrics appear in Grafana up to a minute after traffic.
 - **Tempo's API in `grafana/otel-lgtm:0.35.0` can return each span of a trace twice.** The Collector and Tempo both count every span once; the doubling happens when the trace is read back. Grafana's trace view is not affected in normal use.
-- **Only one stack runs per machine.** Several apps can share it; `OTEL_SERVICE_NAME` tells them apart.
+- **Only one stack runs per machine.** Several apps can share it, each started with its own `otelstarter run -- …`; `OTEL_SERVICE_NAME` tells them apart.
 
 ## Security
 

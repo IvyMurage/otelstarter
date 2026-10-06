@@ -4,8 +4,26 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
+
+// usePython puts a fake python3 reporting version first on PATH, so tests do
+// not depend on the machine's Python. (internal/check has the same helper;
+// test helpers cannot be shared across packages without exporting them.)
+func usePython(t *testing.T, version string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake python3 is a shell script")
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "python3"), []byte("#!/bin/sh\necho 'Python "+version+"'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+}
 
 func newSetUpProject(t *testing.T, endpoint string) string {
 	t.Helper()
@@ -26,6 +44,7 @@ func TestValidateExitCodes(t *testing.T) {
 	defer collector.Close()
 
 	t.Run("warnings only exit 0", func(t *testing.T) {
+		usePython(t, "3.12.4") // independent of the Python on this machine
 		// Missing logging and system-metrics instrumentation are warnings.
 		code, stdout, stderr := runCommand("validate", newSetUpProject(t, collector.URL))
 		if code != exitOK {

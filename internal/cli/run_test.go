@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -59,4 +60,31 @@ func TestRunAppWithoutEnvFileAsksForInit(t *testing.T) {
 	}
 	assertContains(t, "stderr", stderr.String(), "otel.env not found")
 	assertContains(t, "stderr", stderr.String(), "Run otelstarter init first")
+}
+
+func TestPrepareAppEchoesEventsUnlessTheShellSaysOtherwise(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "otel.env", "OTEL_SERVICE_NAME=shop\n")
+	t.Chdir(dir) // prepareApp reads otel.env from the current folder
+
+	app, err := prepareApp([]string{"true"}, streams{})
+	if err != nil {
+		t.Fatalf("prepareApp() error = %v", err)
+	}
+	assertEnv(t, app.Env, "OTELSTARTER_CONSOLE_EVENTS=true")
+	assertEnv(t, app.Env, "OTEL_SERVICE_NAME=shop")
+
+	t.Setenv("OTELSTARTER_CONSOLE_EVENTS", "false")
+	app, err = prepareApp([]string{"true"}, streams{})
+	if err != nil {
+		t.Fatalf("prepareApp() error = %v", err)
+	}
+	assertEnv(t, app.Env, "OTELSTARTER_CONSOLE_EVENTS=false")
+}
+
+func assertEnv(t *testing.T, env []string, want string) {
+	t.Helper()
+	if !slices.Contains(env, want) {
+		t.Errorf("app environment is missing %q", want)
+	}
 }
