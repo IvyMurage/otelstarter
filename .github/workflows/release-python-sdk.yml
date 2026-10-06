@@ -1,0 +1,55 @@
+# Publishes the Python SDK (sdk/python) to PyPI when a tag such as
+# sdk-python-v0.1.0 is pushed.
+#
+# It uses PyPI Trusted Publishing: PyPI trusts this workflow's GitHub
+# identity directly, so no API token is stored anywhere. One-time setup on
+# pypi.org is described in sdk/python/RELEASING.md.
+name: Release Python SDK
+
+on:
+  push:
+    tags: ["sdk-python-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Check the tag matches the package version
+        run: |
+          version=$(python -c 'import re; print(re.search(r"__version__ = \"(.+)\"", open("src/otelstarter/__init__.py").read()).group(1))')
+          if [ "sdk-python-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the package version $version in src/otelstarter/__init__.py"
+            exit 1
+          fi
+      - name: Test
+        run: pip install -e '.[dev]' && pytest
+      - name: Build
+        run: pip install build twine && python -m build && twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: sdk/python/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # The "pypi" environment must match the trusted publisher set up on PyPI.
+    environment: pypi
+    permissions:
+      id-token: write # lets PyPI verify this workflow's identity
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
