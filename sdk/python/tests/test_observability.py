@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 import subprocess
 import sys
-import warnings
 
 import pytest
 from opentelemetry import trace
@@ -11,7 +11,14 @@ from opentelemetry.sdk._logs.export import InMemoryLogRecordExporter
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from otelstarter import observability
-from otelstarter.observability import OtelStarterWarning
+
+
+def warnings_logged(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    records = [r for r in caplog.records if r.name == "otelstarter" and r.levelno == logging.WARNING]
+    for r in records:
+        # Every warning must point at the caller, never inside otelstarter.
+        assert r.filename == "test_observability.py", f"warning points at {r.filename}:{r.lineno}"
+    return records
 
 
 def only_record(logs: InMemoryLogRecordExporter):  # type: ignore[no-untyped-def]
@@ -74,36 +81,42 @@ def test_integer_entity_id_is_recorded_as_text(logs: InMemoryLogRecordExporter) 
     assert only_record(logs).log_record.attributes == {"business.entity.id": "42"}
 
 
-def test_badly_named_event_warns_once_and_is_still_recorded(logs: InMemoryLogRecordExporter) -> None:
-    with pytest.warns(OtelStarterWarning, match="<domain>.<action>"):
-        observability.event("paymentDone")
+def test_badly_named_event_warns_once_and_is_still_recorded(
+    logs: InMemoryLogRecordExporter, caplog: pytest.LogCaptureFixture
+) -> None:
+    observability.event("paymentDone")
+    observability.event("paymentDone")
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")  # a second warning would fail here
-        observability.event("paymentDone")
-
+    (warning,) = warnings_logged(caplog)  # exactly one, despite two calls
+    assert "<domain>.<action>" in warning.getMessage()
+    # The record points at the caller, so formats showing file:line help.
+    assert warning.filename == "test_observability.py"
     assert [r.log_record.event_name for r in logs.get_finished_logs()] == ["paymentDone", "paymentDone"]
 
 
 @pytest.mark.parametrize("name", ["", None, 123])
-def test_unusable_name_is_skipped_with_a_warning(logs: InMemoryLogRecordExporter, name: object) -> None:
-    with pytest.warns(OtelStarterWarning, match="non-empty string"):
-        observability.event(name)  # type: ignore[arg-type]
+def test_unusable_name_is_skipped_with_a_warning(
+    logs: InMemoryLogRecordExporter, caplog: pytest.LogCaptureFixture, name: object
+) -> None:
+    observability.event(name)  # type: ignore[arg-type]
 
+    assert "non-empty string" in warnings_logged(caplog)[0].getMessage()
     assert logs.get_finished_logs() == ()
 
 
-def test_payload_values_are_kept_out(logs: InMemoryLogRecordExporter) -> None:
-    with pytest.warns(OtelStarterWarning, match="must be a string or int"):
-        observability.event("order.created", entity_id={"card": "4111 1111 1111 1111"})  # type: ignore[arg-type]
+def test_payload_values_are_kept_out(logs: InMemoryLogRecordExporter, caplog: pytest.LogCaptureFixture) -> None:
+    observability.event("order.created", entity_id={"card": "4111 1111 1111 1111"})  # type: ignore[arg-type]
 
+    (warning,) = warnings_logged(caplog)
+    assert "must be a string or int" in warning.getMessage()
+    assert "4111" not in warning.getMessage()  # the payload itself is never logged
     assert "business.entity.id" not in (only_record(logs).log_record.attributes or {})
 
 
-def test_long_values_are_cut(logs: InMemoryLogRecordExporter) -> None:
-    with pytest.warns(OtelStarterWarning, match="looks like a payload"):
-        observability.event("order.created", operation="x" * 1000)
+def test_long_values_are_cut(logs: InMemoryLogRecordExporter, caplog: pytest.LogCaptureFixture) -> None:
+    observability.event("order.created", operation="x" * 1000)
 
+    assert "looks like a payload" in warnings_logged(caplog)[0].getMessage()
     assert len((only_record(logs).log_record.attributes or {})["business.operation"]) == 256
 
 
@@ -115,15 +128,16 @@ def test_no_catch_all_argument_exists() -> None:
 
 
 def test_internal_failure_never_reaches_the_app(
-    logs: InMemoryLogRecordExporter, monkeypatch: pytest.MonkeyPatch
+    logs: InMemoryLogRecordExporter, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     def broken_emit(*args: object, **kwargs: object) -> None:
         raise RuntimeError("exporter exploded")
 
     monkeypatch.setattr(observability._logger, "emit", broken_emit)
 
-    with pytest.warns(OtelStarterWarning, match="could not record event"):
-        observability.event("payment.completed")  # must not raise
+    observability.event("payment.completed")  # must not raise
+
+    assert "could not record event" in warnings_logged(caplog)[0].getMessage()
 
 
 def test_works_without_opentelemetry_configured() -> None:
@@ -135,3 +149,30 @@ def test_works_without_opentelemetry_configured() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_console_summary_is_off_by_default(
+    logs: InMemoryLogRecordExporter, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("OTELSTARTER_CONSOLE_EVENTS", raising=False)
+
+    observability.event("order.created", domain="orders")
+
+    assert capsys.readouterr().err == ""
+
+
+def test_console_summary_for_local_development(
+    logs: InMemoryLogRecordExporter, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OTELSTARTER_CONSOLE_EVENTS", "true")
+    tracer = trace.get_tracer("test")
+
+    with tracer.start_as_current_span("POST /orders") as span:
+        observability.event("order.created", domain="orders", outcome="success", entity_id="ord_1")
+
+    trace_id = f"{span.get_span_context().trace_id:032x}"
+    assert capsys.readouterr().err == (
+        f"[otelstarter] event order.created domain=orders outcome=success entity_id=ord_1 trace_id={trace_id}\n"
+    )
+    # Printing is not exporting: still exactly one record.
+    only_record(logs)
