@@ -59,6 +59,21 @@ func runRun(fs *flag.FlagSet, args []string, s streams) error {
 		return err
 	}
 
+	if localstack.Running(ctx) {
+		// Another otelstarter run, usually in another terminal, owns the
+		// stack. Share it, and leave stopping it to that session: starting
+		// again would remove its containers.
+		fmt.Fprintf(s.stdout, "Using the local stack that is already running (started by another otelstarter run).\n"+
+			"  Grafana    %s\n\n", localstack.GrafanaURL)
+		if app == nil {
+			fmt.Fprintln(s.stdout, "Nothing else to start. Stop the stack with Ctrl+C where it was started.")
+			return nil
+		}
+		fmt.Fprintf(s.stdout, "Starting your app: %s\nPress Ctrl+C to stop the app. The shared stack keeps running.\n\n",
+			strings.Join(app.Args, " "))
+		return runApp(ctx, app)
+	}
+
 	fmt.Fprintln(s.stdout, "Starting the local observability stack. The first run downloads about 1 GB of images.")
 	// defer runs when runRun returns, however it returns, so the stack is
 	// always cleaned up.
@@ -84,7 +99,23 @@ func runRun(fs *flag.FlagSet, args []string, s streams) error {
 	}
 
 	fmt.Fprintf(s.stdout, "Starting your app: %s\nPress Ctrl+C to stop the app and the stack.\n\n", strings.Join(app.Args, " "))
-	return runApp(ctx, app)
+	appErr := runApp(ctx, app)
+	if ctx.Err() != nil || !isTerminal(s.stdin) {
+		// Stopped with Ctrl+C, or running in a script or CI where nobody
+		// could press Ctrl+C later: stop the stack now.
+		return appErr
+	}
+
+	// The app exited by itself. Keep the stack so its telemetry, often the
+	// most useful clue when it crashed, can still be explored in Grafana.
+	status := "normally"
+	if appErr != nil {
+		status = "with an error (" + strings.TrimPrefix(appErr.Error(), "your app exited: ") + ")"
+	}
+	fmt.Fprintf(s.stdout, "\nYour app exited %s. The stack is still running, so its telemetry is still in Grafana at %s.\n"+
+		"Press Ctrl+C to stop the stack, then run otelstarter run -- ... again.\n", status, localstack.GrafanaURL)
+	<-ctx.Done()
+	return nil
 }
 
 // splitAtDoubleDash splits args at the first "--".
@@ -117,6 +148,9 @@ func prepareApp(command []string, s streams) (*exec.Cmd, error) {
 	}
 
 	cmd := exec.Command(command[0], command[1:]...)
+	// Print each domain event to the terminal too (otelstarter SDK 0.2.0+).
+	// Listed with the file's settings, so the shell can still override it.
+	envVars = append(envVars, "OTELSTARTER_CONSOLE_EVENTS=true")
 	cmd.Env = mergeEnv(os.Environ(), envVars)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = s.stdin, s.stdout, s.stderr
 	return cmd, nil

@@ -113,6 +113,7 @@ func titles(results []Result) string {
 }
 
 func TestRunSetUpProjectPasses(t *testing.T) {
+	usePython(t, "3.12.4") // independent of the Python on this machine
 	dir := setUpProject(t, fakeCollector(t).URL)
 
 	results := Run(context.Background(), Options{Dir: dir})
@@ -126,6 +127,7 @@ func TestRunSetUpProjectPasses(t *testing.T) {
 }
 
 func TestRunOfflineSkipsCollector(t *testing.T) {
+	usePython(t, "3.12.4") // independent of the Python on this machine
 	dir := setUpProject(t, closedPort(t))
 
 	results := Run(context.Background(), Options{Dir: dir, Offline: true})
@@ -133,7 +135,9 @@ func TestRunOfflineSkipsCollector(t *testing.T) {
 	if failures, _ := Count(results); failures != 0 {
 		t.Errorf("failures = %d, want 0 offline. Results:\n%s", failures, titles(results))
 	}
-	if strings.Contains(titles(results), "Collector") || strings.Contains(titles(results), "listening") {
+	// Match the Collector check's own wording: temp folder names in other
+	// titles contain this test's name, which includes "Collector".
+	if strings.Contains(titles(results), "accepts traces") || strings.Contains(titles(results), "Nothing is listening") {
 		t.Errorf("offline run checked the Collector:\n%s", titles(results))
 	}
 }

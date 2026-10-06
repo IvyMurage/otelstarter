@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -99,4 +101,60 @@ func checkLauncher() Result {
 			"Activate your project's virtual environment and install its dependencies (for example: pip install -r requirements.txt).")
 	}
 	return pass("opentelemetry-instrument: " + path)
+}
+
+// minPython is the oldest Python that OpenTelemetry's packages support.
+var minPython = [2]int{3, 10}
+
+// checkPython reports the Python version that will run the app. It prefers
+// the interpreter next to opentelemetry-instrument (the active virtual
+// environment) and only runs "python --version", never project code. It
+// runs in the project folder because version managers such as pyenv choose
+// the version from files there (.python-version).
+func checkPython(ctx context.Context, dir string) Result {
+	path := findPython()
+	if path == "" {
+		return warn("Python was not found on your PATH",
+			"OpenTelemetry for Python needs Python 3.10 or newer to run your app.",
+			"Install Python 3.10+ (for example with pyenv or uv) and activate your project's virtual environment.")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, "--version")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	version := strings.TrimPrefix(strings.TrimSpace(string(out)), "Python ")
+	var major, minor int
+	if _, scanErr := fmt.Sscanf(version, "%d.%d", &major, &minor); err != nil || scanErr != nil {
+		return warn("Cannot tell which Python version "+path+" is",
+			"OpenTelemetry for Python needs Python 3.10 or newer.",
+			"Run "+path+" --version to check it yourself.")
+	}
+
+	if major < minPython[0] || (major == minPython[0] && minor < minPython[1]) {
+		return fail(fmt.Sprintf("Python %s is too old for OpenTelemetry (%s)", version, path),
+			"OpenTelemetry's Python packages need Python 3.10 or newer, so pip cannot install them "+
+				"(\"No matching distribution found\").",
+			"Use Python 3.10+, for example: pyenv install 3.12 && pyenv local 3.12, then recreate the virtual "+
+				"environment (python -m venv .venv) and install the requirements again.")
+	}
+	return pass(fmt.Sprintf("Python %s (%s)", version, path))
+}
+
+func findPython() string {
+	if launcher, err := exec.LookPath("opentelemetry-instrument"); err == nil {
+		for _, name := range []string{"python3", "python"} {
+			candidate := filepath.Join(filepath.Dir(launcher), name)
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+		}
+	}
+	for _, name := range []string{"python3", "python"} {
+		if path, err := exec.LookPath(name); err == nil {
+			return path
+		}
+	}
+	return ""
 }
