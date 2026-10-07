@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/IvyMurage/otelstarter/internal/adapters/node"
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/project"
 )
@@ -23,7 +24,7 @@ type language struct {
 
 var languages = []language{
 	{"Python", python.Manifests, python.Analyze},
-	{"Node.js", []string{"package.json"}, nil},
+	{"Node.js", node.Manifests, node.Analyze},
 	{"Go", []string{"go.mod"}, nil},
 }
 

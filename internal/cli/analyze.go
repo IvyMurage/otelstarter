@@ -73,6 +73,9 @@ func printProject(w io.Writer, p project.Project) {
 				fmt.Fprintf(w, "    %s %-45s %s\n", mark, inst.Package, inst.Purpose)
 			}
 		}
+		if len(lang.Enabled) > 0 {
+			printField(w, "Enabled", strings.Join(lang.Enabled, ", "))
+		}
 		if lang.Activation != "" {
 			fmt.Fprintln(w)
 			printField(w, "Start with", lang.Activation)

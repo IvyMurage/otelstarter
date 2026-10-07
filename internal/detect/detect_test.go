@@ -28,6 +28,9 @@ func TestDetectLanguages(t *testing.T) {
 			fsys := fstest.MapFS{}
 			for _, name := range tt.files {
 				fsys[name] = &fstest.MapFile{}
+				if name == "package.json" {
+					fsys[name].Data = []byte("{}") // the Node adapter parses it
+				}
 			}
 
 			p, err := DetectFS("/app", fsys)
