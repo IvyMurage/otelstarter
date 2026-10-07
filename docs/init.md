@@ -74,6 +74,21 @@ opentelemetry-distro==0.66b0
 # <<< otelstarter
 ```
 
+## Node.js projects
+
+`init` writes `otel.env` and prints the install command; it never edits `package.json`:
+
+| Package manager | You run |
+|-----------------|---------|
+| npm | `npm install --save-exact @opentelemetry/api@1.9.1 @opentelemetry/auto-instrumentations-node@0.80.0` |
+| yarn / pnpm / bun | the same packages with `yarn add --exact`, `pnpm add --save-exact` or `bun add --exact` |
+
+`otel.env` gets two Node.js settings on top of the shared ones:
+- **`OTEL_NODE_ENABLED_INSTRUMENTATIONS`** loads only the instrumentations for libraries the app uses, for example `http,undici,runtime-node,express,pg,pino`.
+- **`OTEL_NODE_RESOURCE_DETECTORS=env,host,os,process`** stops startup from probing cloud metadata servers, which prints a warning outside those clouds.
+
+The start command is `otelstarter run -- npm start`, or your own command. Logs reach the backend only through pino, winston or bunyan: OpenTelemetry for Node does not export `console.log`.
+
 ## otel.env
 
 `otel.env` contains only standard [OpenTelemetry environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/), so it also works with Docker's `env_file` and Kubernetes, without otelstarter installed.
@@ -111,9 +126,21 @@ OpenTelemetry's Python packages require each other at exact versions, so otelsta
 
 See [performance](performance.md) for what instrumentation costs.
 
+### Node.js in production: SIGTERM
+
+OpenTelemetry's loader (`@opentelemetry/auto-instrumentations-node/register`) handles **SIGTERM** by flushing telemetry, but it **does not exit the process**. Docker, Kubernetes and most process managers stop apps with SIGTERM, so an instrumented app keeps running until it is force-killed (usually after 10–30 seconds).
+
+Until otelstarter ships its own loader, give your app a SIGTERM handler that shuts the server down and exits:
+
+```js
+process.on('SIGTERM', () => server.close(() => process.exit(0)));
+```
+
+`otelstarter run` is not affected: Ctrl+C sends SIGINT.
+
 ## Limitations
 
-- Python only for now. Node.js and Go projects get a clear error.
+- Python and Node.js for now (CommonJS apps; ES modules are next). Go projects get a clear error. A folder with both Python and Node.js is set up as Python.
 - **Start the app with `otel.env` loaded.** [`otelstarter run -- <command>`](run.md) does this for you. Without Docker, load it yourself: `set -a && . ./otel.env && set +a && opentelemetry-instrument <command>`. Without `otel.env`, the SDK looks for the gRPC exporter, which is not installed. The app keeps working, but OpenTelemetry prints `Configuration of configurator failed` and sends nothing.
 - `init` does not install packages or run your package manager. You run the printed command.
 - `init` adds missing packages but **does not change versions already pinned**. `otelstarter validate` warns when the `otelstarter` SDK pin is older than the current one.

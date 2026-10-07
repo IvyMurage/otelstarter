@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/IvyMurage/otelstarter/internal/adapters/node"
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/project"
 )
@@ -67,7 +68,7 @@ func checkPackages(lang project.Language) []Result {
 	for _, inst := range lang.Instrumentation {
 		switch {
 		case inst.Installed:
-		case python.Essential(inst.Package):
+		case python.Essential(inst.Package), node.Essential(inst.Package):
 			missingEssential = append(missingEssential, inst.Package)
 		default:
 			missingOther = append(missingOther, inst.Package)

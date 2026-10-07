@@ -32,13 +32,16 @@ func TestPortsMatchComposeFile(t *testing.T) {
 	}
 }
 
-func TestCollectorConfigFiltersAsgiNoise(t *testing.T) {
+func TestCollectorConfigFiltersNoise(t *testing.T) {
 	config, err := files.ReadFile("files/collector.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(config), `attributes["asgi.event.type"] != nil`) {
 		t.Error("collector.yaml no longer filters the FastAPI send/receive spans")
+	}
+	if !strings.Contains(string(config), `attributes["express.name"] == "expressInit"`) {
+		t.Error("collector.yaml no longer filters Express's built-in middleware spans")
 	}
 }
 

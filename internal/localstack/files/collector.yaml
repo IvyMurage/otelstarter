@@ -22,13 +22,16 @@ processors:
     limit_percentage: 80
     spike_limit_percentage: 20
 
-  # FastAPI/Starlette instrumentation adds an internal span for every ASGI
-  # send and receive event of a request. They add volume, not insight.
+  # Spans that add volume, not insight. FastAPI/Starlette instrumentation
+  # adds an internal span for every ASGI send and receive event.
   filter/noise:
     error_mode: ignore
     traces:
       span:
         - 'kind == SPAN_KIND_INTERNAL and attributes["asgi.event.type"] != nil'
+        # Express adds a span for its two built-in middleware on every
+        # request. Your own middleware (auth, validation) is kept.
+        - 'attributes["express.type"] == "middleware" and (attributes["express.name"] == "query" or attributes["express.name"] == "expressInit")'
 
   batch: {}
 

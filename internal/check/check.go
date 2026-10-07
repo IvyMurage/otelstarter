@@ -53,16 +53,12 @@ func Run(ctx context.Context, opts Options) []Result {
 	if err != nil {
 		return []Result{fail("Project", err.Error(), "")}
 	}
-	if len(proj.Languages) == 0 {
-		return []Result{fail("Project", detect.NoProjectError(proj.Path).Error(), "")}
+	lang, err := detect.Primary(proj)
+	if err != nil {
+		return []Result{fail("Project", err.Error(), "Run otelstarter validate from your project's root folder, or pass its path.")}
 	}
-	lang, ok := findLanguage(proj, "Python")
-	if !ok {
-		return []Result{fail("No Python project found in "+proj.Path,
-			"otelstarter validates Python projects only for now.",
-			"Run otelstarter validate from your project's root folder, or pass its path.")}
-	}
-	add(pass(fmt.Sprintf("Python project (%s)", describe(lang))))
+	isPython := lang.Name == "Python"
+	add(pass(fmt.Sprintf("%s project (%s)", lang.Name, describe(lang))))
 
 	envVars, err := setup.ReadEnvFile(proj.Path)
 	if err != nil {
@@ -71,9 +67,15 @@ func Run(ctx context.Context, opts Options) []Result {
 		env := toMap(envVars)
 		add(pass("otel.env"))
 		add(checkServiceName(env))
-		add(checkProtocol(env))
+		if isPython {
+			// Node's exporter defaults to http/protobuf and the bundle also
+			// ships gRPC, so the protocol trap is Python's alone.
+			add(checkProtocol(env))
+		}
 		add(checkEndpointURL(env))
-		add(checkDeprecated(env)...)
+		if isPython {
+			add(checkDeprecated(env)...)
+		}
 		add(checkSecrets(env)...)
 		if !opts.Offline {
 			add(checkCollector(ctx, endpoint(env)))
@@ -81,10 +83,16 @@ func Run(ctx context.Context, opts Options) []Result {
 	}
 
 	add(checkPackages(lang)...)
-	add(checkVersions(lang)...)
-	add(checkSDKVersion(lang)...)
-	add(checkLauncher())
-	add(checkPython(ctx, proj.Path))
+	if isPython {
+		add(checkVersions(lang)...)
+		add(checkSDKVersion(lang)...)
+		add(checkLauncher())
+		add(checkPython(ctx, proj.Path))
+	} else {
+		add(checkNodeModules(proj.Path))
+		add(checkNodeAdvice(lang)...)
+		add(checkNode(ctx, proj.Path))
+	}
 	return results
 }
 
@@ -109,15 +117,6 @@ func warn(title, why, fix string) Result {
 
 func fail(title, why, fix string) Result {
 	return Result{Status: Fail, Title: title, Why: why, Fix: fix}
-}
-
-func findLanguage(proj project.Project, name string) (project.Language, bool) {
-	for _, l := range proj.Languages {
-		if l.Name == name {
-			return l, true
-		}
-	}
-	return project.Language{}, false
 }
 
 func describe(lang project.Language) string {

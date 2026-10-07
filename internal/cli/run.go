@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/IvyMurage/otelstarter/internal/adapters/node"
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/detect"
 	"github.com/IvyMurage/otelstarter/internal/localstack"
@@ -134,7 +135,17 @@ func prepareApp(command []string, s streams) (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	if proj, err := detect.Detect("."); err == nil && hasLanguage(proj.Languages, "Python") {
+	proj, _ := detect.Detect(".")
+	useNode := node.LaunchesNode(command) || (!hasLanguage(proj.Languages, "Python") && hasLanguage(proj.Languages, "Node.js"))
+	switch {
+	case useNode:
+		// node_modules must contain the loader, or Node fails with a
+		// confusing "Cannot find module" at startup.
+		if !node.Installed(".") {
+			return nil, errors.New(node.RegisterModule + " is not installed in this folder. Install the packages " +
+				"otelstarter init listed (for example: npm install), then try again")
+		}
+	case hasLanguage(proj.Languages, "Python"):
 		var wrapped bool
 		command, wrapped = python.WrapCommand(command)
 		if _, err := exec.LookPath("opentelemetry-instrument"); wrapped && err != nil {
@@ -152,6 +163,11 @@ func prepareApp(command []string, s streams) (*exec.Cmd, error) {
 	// Listed with the file's settings, so the shell can still override it.
 	envVars = append(envVars, "OTELSTARTER_CONSOLE_EVENTS=true")
 	cmd.Env = mergeEnv(os.Environ(), envVars)
+	if useNode {
+		// Added to NODE_OPTIONS rather than replacing it, so options the
+		// shell or otel.env already set (such as --max-old-space-size) stay.
+		cmd.Env = setEnv(cmd.Env, "NODE_OPTIONS", node.WithRegister(envValue(cmd.Env, "NODE_OPTIONS")))
+	}
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = s.stdin, s.stdout, s.stderr
 	return cmd, nil
 }
@@ -163,6 +179,27 @@ func hasLanguage(langs []project.Language, name string) bool {
 		}
 	}
 	return false
+}
+
+// envValue returns the value of name in env, or "".
+func envValue(env []string, name string) string {
+	for _, kv := range env {
+		if k, v, _ := strings.Cut(kv, "="); k == name {
+			return v
+		}
+	}
+	return ""
+}
+
+// setEnv returns env with name set to value, replacing any earlier value.
+func setEnv(env []string, name, value string) []string {
+	out := make([]string, 0, len(env)+1)
+	for _, kv := range env {
+		if k, _, _ := strings.Cut(kv, "="); k != name {
+			out = append(out, kv)
+		}
+	}
+	return append(out, name+"="+value)
 }
 
 // mergeEnv adds fileVars to environ. A variable already set in the shell

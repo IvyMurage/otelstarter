@@ -84,14 +84,14 @@ func TestInitYesAppliesThenSecondRunHasNothingToDo(t *testing.T) {
 
 func TestInitUnsupportedProject(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, dir, "package.json", "{}")
+	writeFile(t, dir, "go.mod", "module example.com/app\n") // Go is not supported yet
 
 	code, _, stderr := runInitIn(t, dir, "--yes")
 
 	if code != exitError {
 		t.Errorf("exit code = %d, want %d", code, exitError)
 	}
-	assertContains(t, "stderr", stderr, "supports Python projects only for now")
+	assertContains(t, "stderr", stderr, "supports Python and Node.js projects for now")
 }
 
 func TestConfirm(t *testing.T) {

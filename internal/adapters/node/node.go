@@ -24,9 +24,10 @@ const maxManifestSize = 1 << 20 // 1 MiB
 
 // The zero-code package and the API it needs.
 const (
-	autoPackage    = "@opentelemetry/auto-instrumentations-node"
-	apiPackage     = "@opentelemetry/api"
-	registerModule = autoPackage + "/register"
+	autoPackage = "@opentelemetry/auto-instrumentations-node"
+	apiPackage  = "@opentelemetry/api"
+	// RegisterModule is loaded with --require to start instrumentation.
+	RegisterModule = autoPackage + "/register"
 )
 
 // alwaysEnabled are switched on for every app: incoming and outgoing HTTP
@@ -134,7 +135,8 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 		{Package: autoPackage, Purpose: "Zero-code instrumentation, loaded with --require",
 			Installed: has(pkg.Dependencies, autoPackage)},
 	}
-	lang.Activation = fmt.Sprintf(`NODE_OPTIONS="--require %s" %s`, registerModule, startCommand(pkg, lang.PackageManager))
+	lang.Start = startCommand(pkg, lang.PackageManager)
+	lang.Activation = fmt.Sprintf(`NODE_OPTIONS="--require %s" %s`, RegisterModule, lang.Start)
 
 	if !hasLogger {
 		lang.Notes = append(lang.Notes, "No logging library found (pino, winston or bunyan). OpenTelemetry for Node "+

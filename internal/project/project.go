@@ -30,6 +30,10 @@ type Language struct {
 	Instrumentation []Instrumentation
 	Activation      string
 
+	// Start is the app's own start command, without instrumentation, e.g.
+	// "uvicorn main:app" or "npm start". init prints "otelstarter run -- " + Start.
+	Start string
+
 	// Enabled lists the instrumentations to switch on, for languages where
 	// one package bundles many (Node.js), e.g. "express", "pg".
 	Enabled []string

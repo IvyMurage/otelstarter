@@ -115,7 +115,7 @@ func TestBuildPlanErrors(t *testing.T) {
 		wantErr string
 	}{
 		{"no project", nil, "no supported project found"},
-		{"only unsupported languages", map[string]string{"go.mod": "module x\n"}, "supports Python projects only for now, and this project uses Go"},
+		{"only unsupported languages", map[string]string{"go.mod": "module x\n"}, "supports Python and Node.js projects for now, and this project uses Go"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,5 +124,50 @@ func TestBuildPlanErrors(t *testing.T) {
 				t.Errorf("buildPlan() error = %v, want it to contain %q", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestBuildPlanNodeProject(t *testing.T) {
+	plan, err := buildPlan("/home/dev/shop", files(map[string]string{
+		"package.json": `{"name": "shop", "scripts": {"start": "node server.js"},
+			"dependencies": {"express": "^4", "pg": "^8", "pino": "^9"}}`,
+		"yarn.lock": "",
+	}))
+	if err != nil {
+		t.Fatalf("buildPlan() error = %v", err)
+	}
+
+	if got := strings.Join(changePaths(plan), ", "); got != "create otel.env" {
+		t.Errorf("changes = %q, want only otel.env: package.json is never edited", got)
+	}
+	env := string(plan.Changes[0].content)
+	for _, want := range []string{
+		"OTEL_SERVICE_NAME=shop\n",
+		"OTEL_NODE_ENABLED_INSTRUMENTATIONS=http,undici,runtime-node,express,pg,pino\n",
+		"OTEL_NODE_RESOURCE_DETECTORS=env,host,os,process\n",
+	} {
+		if !strings.Contains(env, want) {
+			t.Errorf("otel.env is missing %q", want)
+		}
+	}
+	if len(plan.Commands) != 1 || !strings.HasPrefix(plan.Commands[0], "yarn add --exact @opentelemetry/api@") {
+		t.Errorf("Commands = %q, want one yarn add --exact command", plan.Commands)
+	}
+	if plan.StartCommand != "otelstarter run -- yarn start" {
+		t.Errorf("StartCommand = %q", plan.StartCommand)
+	}
+}
+
+// A Python API with a package.json for frontend tooling is still set up as Python.
+func TestBuildPlanPrefersPython(t *testing.T) {
+	plan, err := buildPlan("/app", files(map[string]string{
+		"requirements.txt": "fastapi\n",
+		"package.json":     `{"dependencies": {"express": "^4"}}`,
+	}))
+	if err != nil {
+		t.Fatalf("buildPlan() error = %v", err)
+	}
+	if !strings.HasPrefix(plan.Description, "Python") {
+		t.Errorf("Description = %q, want the Python project", plan.Description)
 	}
 }
