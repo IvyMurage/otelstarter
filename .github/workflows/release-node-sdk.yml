@@ -1,0 +1,51 @@
+# Publishes the Node.js SDK (sdk/node) to npm when a tag such as
+# sdk-node-v0.2.0 is pushed.
+#
+# It uses npm Trusted Publishing: npm trusts this workflow's GitHub identity,
+# so no npm token is stored anywhere. npm only allows this for a package that
+# already exists, so the very first version is published by hand; see
+# sdk/node/RELEASING.md.
+name: Release Node.js SDK
+
+on:
+  push:
+    tags: ["sdk-node-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # The "npm" environment can require manual approval before publishing.
+    environment: npm
+    permissions:
+      id-token: write # lets npm verify this workflow's identity
+    defaults:
+      run:
+        working-directory: sdk/node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Trusted publishing needs Node 22.14+ and npm 11.5.1+; Node 24 ships npm 11.
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Check the tag matches the package version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "sdk-node-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the package version $version in package.json"
+            exit 1
+          fi
+      - name: Check npm supports trusted publishing
+        run: |
+          npm --version
+          node -e "const [a,b,c]=process.argv[1].split('.').map(Number); process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)" "$(npm --version)" \
+            || { echo "npm 11.5.1 or newer is needed for trusted publishing"; exit 1; }
+      - name: Test
+        run: npm ci && npm test
+      - name: Check the packaged LICENSE matches the repository's
+        run: cmp LICENSE ../../LICENSE
+      - name: Publish
+        run: npm publish --access public
