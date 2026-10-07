@@ -28,8 +28,9 @@ func usePython(t *testing.T, version string) {
 func newSetUpProject(t *testing.T, endpoint string) string {
 	t.Helper()
 	dir := t.TempDir()
-	writeFile(t, dir, "requirements.txt", "fastapi\nopentelemetry-distro==0.66b0\nopentelemetry-exporter-otlp-proto-http==1.45.0\n")
-	writeFile(t, dir, "otel.env", "OTEL_SERVICE_NAME=shop\nOTEL_EXPORTER_OTLP_ENDPOINT="+endpoint+"\nOTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf\n")
+	writeFile(t, dir, "requirements.txt", "fastapi\nopentelemetry-distro==0.66b0\nopentelemetry-exporter-otlp-proto-http==1.45.0\notelstarter==0.3.0\n")
+	writeFile(t, dir, "otel.env", "OTEL_SERVICE_NAME=shop\nOTEL_EXPORTER_OTLP_ENDPOINT="+endpoint+"\nOTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf\n"+
+		"OTEL_TRACES_EXPORTER=otelstarter\nOTEL_LOGS_EXPORTER=otelstarter\n")
 	return dir
 }
 

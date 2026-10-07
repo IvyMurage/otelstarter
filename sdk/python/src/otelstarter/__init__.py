@@ -8,4 +8,4 @@ observability.event("order.created", domain="orders", outcome="success")
 from otelstarter import observability
 
 __all__ = ["observability"]
-__version__ = "0.2.0"
+__version__ = "0.3.0"

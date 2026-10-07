@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "otelstarter"
 dynamic = ["version"] # read from src/otelstarter/__init__.py, the single source
-description = "Business-aware domain events for OpenTelemetry, from the otelstarter project."
+description = "Lightweight OpenTelemetry helpers for Python: structured JSON logs, redaction, query sanitising and business events."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
@@ -16,10 +16,24 @@ dependencies = ["opentelemetry-api>=1.45.0"]
 [project.optional-dependencies]
 dev = [
     "opentelemetry-sdk==1.45.0",
+    "opentelemetry-exporter-otlp-proto-http==1.45.0",
+    "opentelemetry-instrumentation==0.66b0",
     "pytest>=8",
     "ruff>=0.6",
     "mypy>=1.11",
 ]
+
+# Found by opentelemetry-instrument and the SDK's configuration: setting
+# OTEL_TRACES_EXPORTER / OTEL_LOGS_EXPORTER to "otelstarter" selects the
+# cleaning exporters, and the instrumentor switches on JSON logs.
+[project.entry-points.opentelemetry_traces_exporter]
+otelstarter = "otelstarter.exporters:PrivacySpanExporter"
+
+[project.entry-points.opentelemetry_logs_exporter]
+otelstarter = "otelstarter.exporters:PrivacyLogExporter"
+
+[project.entry-points.opentelemetry_instrumentor]
+otelstarter = "otelstarter.instrumentor:OtelStarterInstrumentor"
 
 [project.urls]
 Homepage = "https://github.com/IvyMurage/otelstarter"

@@ -34,6 +34,31 @@ It depends only on `opentelemetry-api`. Run your app with OpenTelemetry configur
 - **Never breaks your app.** `event()` never raises. Internal errors are logged once as a warning.
 - **One signal per event.** No duplicate span event or log line, and no automatic metric, so `entity_id` never becomes a metric label.
 
+## Structured logs, redaction and query sanitising (0.3.0)
+
+With the settings `otelstarter init` writes to `otel.env`, an app started by `otelstarter run` (or `opentelemetry-instrument`) gets three things, with no code changes:
+
+- **Console logs become one JSON object per line,** using the fields in [docs/TELEMETRY_CONVENTIONS.md](https://github.com/IvyMurage/otelstarter/blob/main/docs/TELEMETRY_CONVENTIONS.md), shared with the Node.js SDK:
+  ```python
+  log.info("order placed", extra={"orderId": "ord_1", "password": "hunter2"})
+  # {"severity": "INFO", "timestamp": "…", "service.name": "shop", "environment": "local",
+  #  "trace_id": "…", "span_id": "…", "orderId": "ord_1", "password": "[REDACTED]", "message": "order placed"}
+  ```
+  Set `OTELSTARTER_JSON_LOGS=false` to keep your own format.
+- **Secrets are redacted** in logs and in spans: passwords, tokens, API keys, `Authorization` and cookies.
+- **SQL values become `?`:** `WHERE email = 'ann@shop.rw'` → `WHERE email = ?`.
+
+This works because `otel.env` selects the SDK's exporters:
+
+```bash
+OTEL_TRACES_EXPORTER=otelstarter
+OTEL_LOGS_EXPORTER=otelstarter
+```
+
+They make a cleaned copy of each span and log record, then send it with the standard OTLP HTTP exporter. Python freezes a finished span, so copying is the only safe way to change what gets exported.
+
+**FastAPI note.** Recent FastAPI versions (0.142 in testing) log *"FastAPI automatic telemetry configuration failed"* with these settings. It is harmless: it means FastAPI did not add a second exporter. With `otlp`, it would, and every span would be sent twice. To silence the message: `FastAPI(telemetry={"auto_configure": False})`.
+
 ## Seeing events while you develop
 
 Set `OTELSTARTER_CONSOLE_EVENTS=true` and each event also prints one line to stderr. `otelstarter run -- <command>` sets this for you.

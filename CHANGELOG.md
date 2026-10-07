@@ -6,6 +6,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- Python SDK 0.3.0: structured JSON logs (switched on automatically under `opentelemetry-instrument`), and `otelstarter` trace and log exporters that redact secrets and replace SQL values with `?` before export. `init` selects them in `otel.env` (`OTEL_TRACES_EXPORTER`/`OTEL_LOGS_EXPORTER=otelstarter`) and pins `otelstarter==0.3.0`. `validate` warns when an existing `otel.env` does not use them, and fails when it does but the SDK is missing or too old.
+- `sdk/conventions.json`: shared test cases that both SDKs run, so their redaction and sanitising cannot drift apart.
 - Node.js SDK (`sdk/node`, npm package `otelstarter`, not yet published): `otelstarter/register` sets up traces, metrics and logs with only the needed instrumentations and still exits on SIGTERM; `logger` writes structured JSON logs with trace context; secrets are redacted and SQL values sanitised in logs and spans; `event()` records domain events. Conventions shared with Python are in `docs/TELEMETRY_CONVENTIONS.md`.
 - `init`, `run`, `validate` and `doctor` support Node.js (CommonJS apps). `init` writes `otel.env` with only the detected instrumentations enabled and prints the exact `npm`/`yarn`/`pnpm`/`bun` install command. `run` adds the OpenTelemetry loader to `NODE_OPTIONS`, keeping existing options. `validate` checks the Node.js version, that the package is installed, and warns about missing logging libraries, ES modules, Fastify and Prisma. Tested end to end with Express and NestJS.
 - The local Collector drops Express's built-in `query` and `expressInit` middleware spans.
@@ -30,6 +32,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Changed
 
+- Python `otel.env` no longer sets `OTEL_PYTHON_LOG_CORRELATION`: the JSON logs carry `trace_id` and `span_id`. With plain `otlp` exporters, recent FastAPI versions add their own exporter and send every span twice; the new `otelstarter` exporters avoid that.
 - When the app exits by itself, `run` keeps the stack running in a terminal, so the crash's telemetry stays in Grafana. Without a terminal it still stops.
 - **Python SDK 0.2.0 (breaking):** problems with an event are logged as warnings on the `otelstarter` logger instead of being raised as `OtelStarterWarning`, which is removed. They now look like the app's own logs and reach the backend.
 - `init` pins `otelstarter==0.2.0`.

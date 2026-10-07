@@ -96,6 +96,12 @@ func exampleStartCommand(frameworks []string) string {
 // taken from https://opentelemetry.io/docs/zero-code/python/troubleshooting/.
 func runNotes(frameworks []string) []string {
 	notes := []string{"OpenTelemetry's Python packages need Python 3.10 or newer."}
+	if slices.Contains(frameworks, "FastAPI") {
+		notes = append(notes, "Recent FastAPI versions log \"FastAPI automatic telemetry configuration failed\" "+
+			"when otel.env uses otelstarter's exporter. It is harmless: otelstarter already exports, and the "+
+			"message means FastAPI did not add a second exporter (with otlp it would send every span twice). "+
+			"To silence it, create the app with FastAPI(telemetry={\"auto_configure\": False}).")
+	}
 	if slices.Contains(frameworks, "Flask") {
 		notes = append(notes, "Flask's debug mode starts a reloader that stops instrumentation from loading. "+
 			"Run without debug mode, or pass use_reloader=False to app.run().")
