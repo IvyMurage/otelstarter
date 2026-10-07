@@ -65,12 +65,12 @@ jobs:
       - name: Test
         run: pytest
 
-  # The Node.js SDK (sdk/node), on the Node versions OpenTelemetry supports.
+  # The Node.js SDK (sdk/node), on the Node.js releases still supported upstream.
   node-sdk:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ["20", "22"]
+        node-version: ["22", "24"]
     defaults:
       run:
         working-directory: sdk/node
