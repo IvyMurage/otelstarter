@@ -1,6 +1,6 @@
 # Telemetry conventions shared by the SDKs
 
-The Node.js and Python SDKs must produce the same structured logs, apply the same redaction and sanitise queries the same way, so the backend looks identical whichever language a service uses. This page is the contract. Each SDK has tests that check its output against it.
+The Node.js and Python SDKs must produce the same structured logs, apply the same redaction and sanitise queries the same way, so the backend looks identical whichever language a service uses. This page is the contract. The test cases in [`sdk/conventions.json`](../sdk/conventions.json) are run by both SDKs, so they cannot drift apart.
 
 ## Structured logs
 
@@ -9,7 +9,7 @@ One JSON object per line on stdout. The same entry is also sent to OpenTelemetry
 | Field | Always | Example |
 |-------|--------|---------|
 | `timestamp` | yes | `"2026-10-07T10:36:20.852Z"`, ISO 8601, UTC |
-| `severity` | yes | `"DEBUG"`, `"INFO"`, `"WARN"` or `"ERROR"` |
+| `severity` | yes | `"DEBUG"`, `"INFO"`, `"WARN"`, `"ERROR"` or `"FATAL"` |
 | `message` | yes | `"order placed"` |
 | `service.name` | yes | from `OTEL_SERVICE_NAME` |
 | `environment` | when set | from `deployment.environment.name` in `OTEL_RESOURCE_ATTRIBUTES` |

@@ -135,3 +135,45 @@ func parseRelease(v string) ([]int, bool) {
 	}
 	return parts, len(parts) > 0
 }
+
+// checkPrivacyExporters reports Python projects whose otel.env does not
+// select otelstarter's cleaning exporters (set up before SDK 0.3.0; init
+// never rewrites an existing otel.env), and fails when it does select them
+// but the pinned SDK is too old to provide them: OpenTelemetry would then
+// fail to configure and the app would send nothing.
+func checkPrivacyExporters(env map[string]string, lang project.Language) []Result {
+	uses := env["OTEL_TRACES_EXPORTER"] == python.PrivacyExporter || env["OTEL_LOGS_EXPORTER"] == python.PrivacyExporter
+	if !uses {
+		return []Result{warn("otel.env does not use otelstarter's privacy exporters",
+			"Without them, SQL values and secrets in spans and logs reach your backend as they are. "+
+				"Recent FastAPI versions also add their own OTLP exporter when this is otlp, so every span is sent twice.",
+			"Add OTEL_TRACES_EXPORTER=otelstarter and OTEL_LOGS_EXPORTER=otelstarter to otel.env "+
+				"(or delete otel.env and run otelstarter init again), with otelstarter "+python.PrivacyExporterSince+" or newer installed.")}
+	}
+	if !declared(lang, "otelstarter") {
+		return []Result{fail("otel.env selects the otelstarter exporter, but the otelstarter package is not declared",
+			"OpenTelemetry cannot find the exporter, fails to configure, and the app sends no telemetry.",
+			fmt.Sprintf("Run otelstarter init to add otelstarter==%s, then install your requirements. "+
+				"Or set OTEL_TRACES_EXPORTER and OTEL_LOGS_EXPORTER back to otlp.", python.TestedSDKVersion()))}
+	}
+	for _, pin := range lang.Pins {
+		if pin.Package == "otelstarter" && olderVersion(pin.Version, python.PrivacyExporterSince) {
+			return []Result{fail(
+				fmt.Sprintf("otel.env selects the otelstarter exporter, but otelstarter==%s does not have it", pin.Version),
+				"OpenTelemetry cannot find the exporter, fails to configure, and the app sends no telemetry.",
+				fmt.Sprintf("Change the pin to otelstarter==%s and reinstall your requirements.", python.TestedSDKVersion()))}
+		}
+	}
+	return []Result{pass("Privacy exporters: SQL values and secrets are cleaned before export")}
+}
+
+// declared reports whether pkg is one of the project's recommended packages
+// and is declared in its manifest.
+func declared(lang project.Language, pkg string) bool {
+	for _, inst := range lang.Instrumentation {
+		if inst.Package == pkg {
+			return inst.Installed
+		}
+	}
+	return false
+}

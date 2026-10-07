@@ -1,0 +1,26 @@
+{
+  "_about": "Shared test cases for docs/TELEMETRY_CONVENTIONS.md. Both SDK test suites read this file, so the Node.js and Python SDKs cannot drift apart.",
+  "sanitize_query": [
+    ["SELECT * FROM users WHERE email = 'ann@shop.rw' AND age > 30", "SELECT * FROM users WHERE email = ? AND age > ?"],
+    ["SELECT * FROM t WHERE name = 'O''Brien'", "SELECT * FROM t WHERE name = ?"],
+    ["SELECT * FROM orders WHERE id IN (1, 2, 3)", "SELECT * FROM orders WHERE id IN (?)"],
+    ["SELECT * FROM t2 WHERE price > -1.5", "SELECT * FROM t2 WHERE price > ?"],
+    ["SELECT * FROM users WHERE id = $1", "SELECT * FROM users WHERE id = $1"],
+    ["SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> 'ann@shop.rw' AND 42 > 1", "SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> ? AND ? > ?"]
+  ],
+  "query_summary": [
+    ["SELECT id FROM users WHERE email = 'x'", "SELECT users"],
+    ["insert into \"orders\" (id) values (1)", "INSERT orders"],
+    ["UPDATE stock SET n = n - 1", "UPDATE stock"],
+    ["BEGIN", null]
+  ],
+  "sensitive_keys": {
+    "yes": ["password", "Authorization", "accessToken", "access_token", "http.request.header.authorization", "x-api-key", "creditCard", "SSN"],
+    "no": ["orderId", "tokens_used", "http.method", "user", "passwordless_login_enabled"]
+  },
+  "redact_url": [
+    ["/reset?token=abc123&lang=en", "/reset?token=[REDACTED]&lang=en"],
+    ["https://x.rw/a?id=7", "https://x.rw/a?id=7"],
+    ["/cb?code=1&api_key=k&state=s", "/cb?code=1&api_key=[REDACTED]&state=s"]
+  ]
+}

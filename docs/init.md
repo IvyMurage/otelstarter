@@ -99,7 +99,7 @@ The start command is `otelstarter run -- npm start`, or your own command. Logs r
 | `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment.name=local` | Where the service runs |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | The Collector that receives the telemetry |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | Matches the HTTP exporter that `init` installs |
-| `OTEL_PYTHON_LOG_CORRELATION` | `true` | Adds `trace_id` and `span_id` to log messages |
+| `OTEL_TRACES_EXPORTER`, `OTEL_LOGS_EXPORTER` | `otelstarter` | Python: send through the otelstarter SDK's exporters (0.3.0+), which replace SQL values with `?` and redact secrets first. Console logs become structured JSON with trace IDs |
 
 Edit it freely. `init` never overwrites an existing `otel.env`. To regenerate it, delete it and run `init` again.
 

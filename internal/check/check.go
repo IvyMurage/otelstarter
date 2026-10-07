@@ -75,6 +75,7 @@ func Run(ctx context.Context, opts Options) []Result {
 		add(checkEndpointURL(env))
 		if isPython {
 			add(checkDeprecated(env)...)
+			add(checkPrivacyExporters(env, lang)...)
 		}
 		add(checkSecrets(env)...)
 		if !opts.Offline {

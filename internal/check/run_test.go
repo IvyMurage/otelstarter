@@ -93,8 +93,9 @@ func setUpProject(t *testing.T, endpoint string) string {
 	files := map[string]string{
 		"requirements.txt": "fastapi\nopentelemetry-distro==0.66b0\nopentelemetry-exporter-otlp-proto-http==1.45.0\n" +
 			"opentelemetry-instrumentation-logging==0.66b0\nopentelemetry-instrumentation-system-metrics==0.66b0\n" +
-			"opentelemetry-instrumentation-fastapi==0.66b0\n",
-		"otel.env": "OTEL_SERVICE_NAME=shop\nOTEL_EXPORTER_OTLP_ENDPOINT=" + endpoint + "\nOTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf\n",
+			"opentelemetry-instrumentation-fastapi==0.66b0\notelstarter==0.3.0\n",
+		"otel.env": "OTEL_SERVICE_NAME=shop\nOTEL_EXPORTER_OTLP_ENDPOINT=" + endpoint + "\nOTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf\n" +
+			"OTEL_TRACES_EXPORTER=otelstarter\nOTEL_LOGS_EXPORTER=otelstarter\n",
 	}
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {

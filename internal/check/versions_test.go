@@ -129,3 +129,32 @@ func TestCheckVersionsIgnoresTheSDK(t *testing.T) {
 		t.Errorf("checkVersions() = %+v, want a single pass", results)
 	}
 }
+
+func TestCheckPrivacyExporters(t *testing.T) {
+	uses := map[string]string{"OTEL_TRACES_EXPORTER": "otelstarter", "OTEL_LOGS_EXPORTER": "otelstarter"}
+	withSDK := func(version string) project.Language {
+		lang := pins("otelstarter", version)
+		lang.Instrumentation = []project.Instrumentation{{Package: "otelstarter", Installed: true}}
+		return lang
+	}
+	tests := []struct {
+		name      string
+		env       map[string]string
+		lang      project.Language
+		want      Status
+		wantTitle string
+	}{
+		{"set up before 0.3.0", map[string]string{"OTEL_TRACES_EXPORTER": "otlp"}, withSDK("0.2.0"), Warn, "does not use"},
+		{"selected and current", uses, withSDK("0.3.0"), Pass, "cleaned before export"},
+		{"selected but SDK too old", uses, withSDK("0.2.0"), Fail, "does not have it"},
+		{"selected but SDK not declared", uses, project.Language{}, Fail, "not declared"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := checkPrivacyExporters(tt.env, tt.lang)
+			if len(got) != 1 || got[0].Status != tt.want || !strings.Contains(got[0].Title, tt.wantTitle) {
+				t.Errorf("checkPrivacyExporters() = %+v, want %v containing %q", got, tt.want, tt.wantTitle)
+			}
+		})
+	}
+}

@@ -17,7 +17,7 @@ const (
 
 	// otelstarterVersion is the domain-event SDK in sdk/python, published to
 	// PyPI. A test keeps it equal to sdk/python/src/otelstarter/__init__.py.
-	otelstarterVersion = "0.2.0"
+	otelstarterVersion = "0.3.0"
 )
 
 // Markers around the block otelstarter adds to requirements.txt. Removing
@@ -29,17 +29,29 @@ const (
 
 // EnvVars are the Python-specific settings for otel.env.
 //
-// Log export needs no setting: opentelemetry-instrumentation-logging installs
-// the OpenTelemetry log handler itself. The older
-// OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED switch is deprecated, and
-// setting it makes that instrumentation skip its own handler.
+// "otelstarter" selects the otelstarter SDK's exporters (0.3.0+), found by
+// OpenTelemetry through entry points: they clean each span and log (SQL
+// values, secrets) and then send it over OTLP. The SDK's instrumentor also
+// switches console logs to structured JSON with trace IDs, so the older
+// OTEL_PYTHON_LOG_CORRELATION text format is not set.
 var EnvVars = []project.EnvVar{
 	{
-		Name:    "OTEL_PYTHON_LOG_CORRELATION",
-		Value:   "true",
-		Comment: "Add trace_id and span_id to log messages.",
+		Name:    "OTEL_TRACES_EXPORTER",
+		Value:   PrivacyExporter,
+		Comment: "Send traces through otelstarter's exporter, which hides SQL values and secrets first.",
+	},
+	{
+		Name:    "OTEL_LOGS_EXPORTER",
+		Value:   PrivacyExporter,
+		Comment: "Send logs through otelstarter's exporter, which redacts secrets first.",
 	},
 }
+
+// PrivacyExporter is the exporter name the otelstarter SDK registers.
+const PrivacyExporter = "otelstarter"
+
+// PrivacyExporterSince is the first SDK version that provides it.
+const PrivacyExporterSince = "0.3.0"
 
 // MissingRequirements returns pinned requirement lines, such as
 // "opentelemetry-distro==0.66b0", for recommended packages the project does
