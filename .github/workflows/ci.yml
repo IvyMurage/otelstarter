@@ -64,3 +64,24 @@ jobs:
         run: mypy
       - name: Test
         run: pytest
+
+  # The Node.js SDK (sdk/node), on the Node versions OpenTelemetry supports.
+  node-sdk:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20", "22"]
+    defaults:
+      run:
+        working-directory: sdk/node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Check the packaged LICENSE matches the repository's
+        run: cmp LICENSE ../../LICENSE
+      - name: Install
+        run: npm ci
+      - name: Test
+        run: npm test

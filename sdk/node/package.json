@@ -1,0 +1,44 @@
+{
+  "name": "otelstarter",
+  "version": "0.1.0",
+  "description": "Lightweight OpenTelemetry for Node.js: zero-code tracing, metrics and structured logs, with redaction, query sanitising and business events.",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/IvyMurage/otelstarter.git", "directory": "sdk/node" },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" },
+    "./register": "./dist/src/register.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["dist/src"],
+  "engines": { "node": "^18.19.0 || >=20.6.0" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "~0.223.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "~0.223.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "~0.223.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "~0.223.0",
+    "@opentelemetry/instrumentation": "~0.223.0",
+    "@opentelemetry/instrumentation-http": "~0.223.0",
+    "@opentelemetry/instrumentation-pino": "^0.69.0",
+    "@opentelemetry/instrumentation-runtime-node": "^0.36.0",
+    "@opentelemetry/instrumentation-undici": "^0.33.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-logs": "~0.223.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
+    "@opentelemetry/sdk-trace-base": "^2.12.0",
+    "@opentelemetry/sdk-trace-node": "^2.12.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
+    "pino": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
