@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/IvyMurage/otelstarter/internal/adapters/node"
 	"github.com/IvyMurage/otelstarter/internal/adapters/python"
 	"github.com/IvyMurage/otelstarter/internal/detect"
 	"github.com/IvyMurage/otelstarter/internal/project"
@@ -78,7 +79,7 @@ func buildPlan(path string, fsys fs.FS) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	lang, err := pythonLanguage(proj)
+	lang, err := detect.Primary(proj)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -87,13 +88,13 @@ func buildPlan(path string, fsys fs.FS) (Plan, error) {
 		Path:        path,
 		Description: describe(lang),
 		// otelstarter run loads otel.env and adds opentelemetry-instrument itself.
-		StartCommand: "otelstarter run -- " + strings.TrimPrefix(lang.Activation, "opentelemetry-instrument "),
+		StartCommand: "otelstarter run -- " + lang.Start,
 		Notes:        lang.Notes,
 	}
 	for _, other := range proj.Languages {
 		if other.Name != lang.Name {
 			plan.Notes = append(plan.Notes, fmt.Sprintf(
-				"%s was also found but is not set up: init supports Python only for now.", other.Name))
+				"%s was also found but is not set up: init sets up one language per folder, and chose %s.", other.Name, lang.Name))
 		}
 	}
 
@@ -106,25 +107,10 @@ func buildPlan(path string, fsys fs.FS) (Plan, error) {
 	return plan, nil
 }
 
-func pythonLanguage(proj project.Project) (project.Language, error) {
-	if len(proj.Languages) == 0 {
-		return project.Language{}, detect.NoProjectError(proj.Path)
-	}
-	var found []string
-	for _, l := range proj.Languages {
-		if l.Name == "Python" {
-			return l, nil
-		}
-		found = append(found, l.Name)
-	}
-	return project.Language{}, fmt.Errorf("otelstarter init supports Python projects only for now, "+
-		"and this project uses %s. Support for more languages is planned", strings.Join(found, " and "))
-}
-
 // planEnvFile creates otel.env when it is missing. An existing file is never
 // overwritten, because the user may have edited it.
 func planEnvFile(plan *Plan, fsys fs.FS, lang project.Language) error {
-	content := renderEnvFile(serviceName(lang.AppName, filepath.Base(plan.Path)), python.EnvVars)
+	content := renderEnvFile(serviceName(lang.AppName, filepath.Base(plan.Path)), languageEnvVars(lang))
 
 	existing, exists, err := readFile(fsys, EnvFileName)
 	if err != nil {
@@ -151,6 +137,15 @@ func planEnvFile(plan *Plan, fsys fs.FS, lang project.Language) error {
 // which otelstarter does not rewrite (that would lose comments and
 // formatting), so the user gets the exact command to run instead.
 func planPackages(plan *Plan, fsys fs.FS, lang project.Language) error {
+	if lang.Name == "Node.js" {
+		// npm, yarn, pnpm and bun edit package.json themselves; otelstarter
+		// never rewrites it, so the user gets the exact command.
+		if pkgs := node.MissingPackages(lang); len(pkgs) > 0 {
+			plan.Commands = append(plan.Commands, node.InstallCommand(lang.PackageManager, pkgs))
+		}
+		return nil
+	}
+
 	reqs := python.MissingRequirements(lang)
 	if len(reqs) == 0 {
 		return nil
@@ -177,6 +172,14 @@ func planPackages(plan *Plan, fsys fs.FS, lang project.Language) error {
 			"if pip reports a version conflict, align the existing ones to match.")
 	}
 	return nil
+}
+
+// languageEnvVars are the language-specific settings for otel.env.
+func languageEnvVars(lang project.Language) []project.EnvVar {
+	if lang.Name == "Node.js" {
+		return node.EnvVars(lang)
+	}
+	return python.EnvVars
 }
 
 func describe(lang project.Language) string {

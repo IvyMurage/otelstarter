@@ -149,7 +149,7 @@ func TestRunStopsEarly(t *testing.T) {
 		wantTitle string
 	}{
 		{"no project", nil, "no supported project found"},
-		{"no Python", map[string]string{"go.mod": "module x\n"}, "No Python project found"},
+		{"unsupported language", map[string]string{"go.mod": "module x\n"}, "supports Python and Node.js projects for now"},
 		{"no otel.env", map[string]string{"requirements.txt": "fastapi\n"}, "otel.env"},
 	}
 	for _, tt := range tests {

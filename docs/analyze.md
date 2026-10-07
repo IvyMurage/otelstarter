@@ -82,7 +82,7 @@ Node.js details:
 
 Node.js apps get two packages: `@opentelemetry/api`, and `@opentelemetry/auto-instrumentations-node`, which bundles instrumentation for about 40 libraries and loads with zero code changes through `--require`.
 
-**Only what the app uses is switched on.** `analyze` lists the instrumentations to enable: always `http`, `undici` (for `fetch`) and `runtime-node`, plus one per detected library, for example `http, undici, runtime-node, express, pg, pino`. `init` will set this list as `OTEL_NODE_ENABLED_INSTRUMENTATIONS`, so the other instrumentations are never loaded.
+**Only what the app uses is switched on.** `analyze` lists the instrumentations to enable: always `http`, `undici` (for `fetch`) and `runtime-node`, plus one per detected library, for example `http, undici, runtime-node, express, pg, pino`. `init` sets this list as `OTEL_NODE_ENABLED_INSTRUMENTATIONS`, so the other instrumentations are never loaded.
 
 Notes explain the gaps:
 - **No logging library.** OpenTelemetry for Node does not export `console.log`; logs reach the backend only through pino, winston or bunyan.

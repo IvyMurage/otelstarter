@@ -6,6 +6,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `init`, `run`, `validate` and `doctor` support Node.js (CommonJS apps). `init` writes `otel.env` with only the detected instrumentations enabled and prints the exact `npm`/`yarn`/`pnpm`/`bun` install command. `run` adds the OpenTelemetry loader to `NODE_OPTIONS`, keeping existing options. `validate` checks the Node.js version, that the package is installed, and warns about missing logging libraries, ES modules, Fastify and Prisma. Tested end to end with Express and NestJS.
+- The local Collector drops Express's built-in `query` and `expressInit` middleware spans.
 - `analyze` supports Node.js: frameworks, libraries, logging library, package manager and ES-module apps from `package.json`. It recommends `@opentelemetry/auto-instrumentations-node` with only the detected instrumentations enabled.
 - `validate` warns when the `otelstarter` SDK is pinned to an older version than the one `init` now pins.
 - `docs/performance.md`: first measured footprint and overhead baseline, plus how to sample traces in production.

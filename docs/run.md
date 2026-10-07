@@ -37,7 +37,9 @@ With `--`, run:
 
 **If a stack is already running**, because `otelstarter run` is open in another terminal, `run` uses it instead of starting another. It starts only your app, and leaves stopping the stack to the terminal that started it.
 
-Activate your virtual environment first, so `opentelemetry-instrument` and your app's command are found. With uv, put `opentelemetry-instrument` in the command yourself: `otelstarter run -- uv run opentelemetry-instrument uvicorn main:app`.
+**Node.js apps:** `run` adds `--require @opentelemetry/auto-instrumentations-node/register` to `NODE_OPTIONS` (keeping anything already there), so any start command works: `node app.js`, `npm start`, `nest start`. It stops early if the package is not installed in `node_modules`.
+
+**Python apps:** activate your virtual environment first, so `opentelemetry-instrument` and your app's command are found. With uv, put `opentelemetry-instrument` in the command yourself: `otelstarter run -- uv run opentelemetry-instrument uvicorn main:app`.
 
 ## Example
 

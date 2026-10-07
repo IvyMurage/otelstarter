@@ -108,3 +108,28 @@ func NoProjectError(path string) error {
 		"Run otelstarter from your project's root folder, or pass the folder path, for example: otelstarter analyze ./my-app or otelstarter init ./my-app",
 		path, strings.Join(AllManifests(), ", "))
 }
+
+// setUpLanguages are the languages init, run and validate support, in order
+// of preference when a project has several (a Python API with a
+// package.json for frontend tooling is set up as Python).
+var setUpLanguages = []string{"Python", "Node.js"}
+
+// Primary returns the language init, run and validate work with.
+func Primary(proj project.Project) (project.Language, error) {
+	if len(proj.Languages) == 0 {
+		return project.Language{}, NoProjectError(proj.Path)
+	}
+	for _, name := range setUpLanguages {
+		for _, l := range proj.Languages {
+			if l.Name == name {
+				return l, nil
+			}
+		}
+	}
+	var found []string
+	for _, l := range proj.Languages {
+		found = append(found, l.Name)
+	}
+	return project.Language{}, fmt.Errorf("otelstarter supports Python and Node.js projects for now, "+
+		"and this project uses %s. Support for more languages is planned", strings.Join(found, " and "))
+}

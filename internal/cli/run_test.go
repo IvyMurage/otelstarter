@@ -2,8 +2,11 @@ package cli
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -86,5 +89,33 @@ func assertEnv(t *testing.T, env []string, want string) {
 	t.Helper()
 	if !slices.Contains(env, want) {
 		t.Errorf("app environment is missing %q", want)
+	}
+}
+
+func TestPrepareAppForNode(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "otel.env", "OTEL_SERVICE_NAME=shop\n")
+	writeFile(t, dir, "package.json", `{"dependencies": {"express": "^4"}}`)
+	t.Chdir(dir)
+
+	if _, err := prepareApp([]string{"true"}, streams{}); err == nil ||
+		!strings.Contains(err.Error(), "is not installed in this folder") {
+		t.Fatalf("prepareApp() without node_modules: error = %v, want a 'not installed' error", err)
+	}
+
+	pkgDir := filepath.Join("node_modules", "@opentelemetry", "auto-instrumentations-node")
+	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, pkgDir, "package.json", "{}")
+	t.Setenv("NODE_OPTIONS", "--max-old-space-size=4096")
+
+	app, err := prepareApp([]string{"true"}, streams{})
+	if err != nil {
+		t.Fatalf("prepareApp() error = %v", err)
+	}
+	assertEnv(t, app.Env, "NODE_OPTIONS=--max-old-space-size=4096 --require @opentelemetry/auto-instrumentations-node/register")
+	if app.Args[0] != "true" {
+		t.Errorf("command = %q, want it unchanged (Node is instrumented through NODE_OPTIONS)", app.Args)
 	}
 }

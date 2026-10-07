@@ -125,7 +125,8 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	lang.Instrumentation, notes = recommend(names, names)
 	lang.Notes = append(lang.Notes, notes...)
 	lang.Notes = append(lang.Notes, runNotes(lang.Frameworks)...)
-	lang.Activation = "opentelemetry-instrument " + exampleStartCommand(lang.Frameworks)
+	lang.Start = exampleStartCommand(lang.Frameworks)
+	lang.Activation = "opentelemetry-instrument " + lang.Start
 	return lang, nil
 }
 

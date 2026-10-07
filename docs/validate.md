@@ -54,6 +54,9 @@ $ otelstarter validate
 | Versions | OpenTelemetry packages pinned with `==` disagree within a version family: beta packages (`0.NNbN`: distro, instrumentation) must all match, as must stable ones (`1.NN.N`: API, SDK, exporters) |
 | Python | The Python that will run the app is older than 3.10. That is the one next to `opentelemetry-instrument` if found, else `python3` or `python` on PATH. It runs `--version` in the project folder, so pyenv's `.python-version` applies |
 | SDK version | `otelstarter` is pinned to an older version than the one this otelstarter pins (warning). `init` adds missing packages but does not change existing pins |
+| Node.js version | The `node` on PATH is older than 18.19 (or 20.0–20.5). Runs `node --version` in the project folder, so `.nvmrc` with nvm or fnm applies |
+| Node.js packages installed | `@opentelemetry/auto-instrumentations-node` is declared but not in `node_modules` (warning) |
+| Node.js advice | No logging library (console.log is not exported), ES-module app, or Fastify/Prisma, which need their own instrumentation (warnings) |
 | Launcher | `opentelemetry-instrument` is not on `PATH`, usually because the virtual environment is not active (warning) |
 
 The Collector check sends an **empty** export request (`{}`) for each signal. A Collector answers `200` and stores nothing, so it adds no test data to your backend.
@@ -79,7 +82,7 @@ otel.env:
 
 ## Limitations
 
-- **Python projects only.**
+- **Python and Node.js projects.** The Python-only checks (protocol, version families, launcher, Python version) do not run for Node.js, and the Node.js checks do not run for Python.
 - **Packages are checked as declared in the manifest, not as installed.** otelstarter never runs pip. The launcher check is the hint that they are installed in the active environment.
 - **Only exact `==` pins are compared.** Ranges such as `>=1.40` and Poetry's `^` versions are not checked.
 - **Signal-specific endpoints** (`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` and so on) are not checked.
