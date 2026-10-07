@@ -13,3 +13,8 @@ __pycache__/
 # Python build output
 dist/
 build/
+
+# Node SDK build output
+sdk/node/node_modules/
+sdk/node/dist/
+*.tgz

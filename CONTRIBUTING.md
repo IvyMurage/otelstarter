@@ -41,6 +41,7 @@ OTELSTARTER_DOCKER_TESTS=1 go test ./internal/localstack/
 | `internal/check/` | The checks behind `validate` and `doctor`. Read-only. |
 | `internal/localstack/` | The local Collector + Grafana stack for `run`. The only package that runs Docker. Its config files are in `files/` and embedded in the binary. |
 | `internal/setup/` | Builds and applies the file changes for `init`. The only package that writes to a user's project. |
+| `sdk/node/` | The Node.js SDK (TypeScript): loader, structured logger, redaction, query sanitising, domain events. `npm test` inside it. |
 | `sdk/python/` | The Python domain-event SDK that runs inside users' apps. Its own README covers development; `RELEASING.md` covers publishing to PyPI. |
 | `docs/` | Architecture, requirements, guidelines, ADRs. |
 

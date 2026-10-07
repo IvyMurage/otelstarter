@@ -6,6 +6,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- Node.js SDK (`sdk/node`, npm package `otelstarter`, not yet published): `otelstarter/register` sets up traces, metrics and logs with only the needed instrumentations and still exits on SIGTERM; `logger` writes structured JSON logs with trace context; secrets are redacted and SQL values sanitised in logs and spans; `event()` records domain events. Conventions shared with Python are in `docs/TELEMETRY_CONVENTIONS.md`.
 - `init`, `run`, `validate` and `doctor` support Node.js (CommonJS apps). `init` writes `otel.env` with only the detected instrumentations enabled and prints the exact `npm`/`yarn`/`pnpm`/`bun` install command. `run` adds the OpenTelemetry loader to `NODE_OPTIONS`, keeping existing options. `validate` checks the Node.js version, that the package is installed, and warns about missing logging libraries, ES modules, Fastify and Prisma. Tested end to end with Express and NestJS.
 - The local Collector drops Express's built-in `query` and `expressInit` middleware spans.
 - `analyze` supports Node.js: frameworks, libraries, logging library, package manager and ES-module apps from `package.json`. It recommends `@opentelemetry/auto-instrumentations-node` with only the detected instrumentations enabled.
