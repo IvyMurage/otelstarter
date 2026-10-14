@@ -15,7 +15,9 @@ npm ci && npm test           # builds dist/ and runs the tests
 npm publish --access public  # publishes otelstarter 0.1.0
 ```
 
-Check it appeared at https://www.npmjs.com/package/otelstarter.
+If npm answers `E403 ... Two-factor authentication ... is required to publish packages`, turn on two-factor authentication in your npmjs.com account settings, then `npm logout && npm login` and publish again. Do not use a token that bypasses two-factor authentication instead.
+
+npm may first show a placeholder version `0.0.0-stage` and say the package "is being processed". The real version appears a few minutes later. Check with `npm view otelstarter versions`, or at https://www.npmjs.com/package/otelstarter.
 
 **2. Link npm to the repository.** On npmjs.com, open the package, then **Settings → Trusted publishing → GitHub Actions**, and enter:
 
@@ -26,7 +28,7 @@ Check it appeared at https://www.npmjs.com/package/otelstarter.
 | Workflow filename | `release-node-sdk.yml` |
 | Environment name | `npm` |
 
-The first trusted publish must happen within 2 days of saving this.
+npm then shows the status **Pending validation**. The link counts as validated after the workflow's first publish, which must happen within 2 days of saving it, or the setting has to be added again. A new version is needed for that, since npm never accepts the same version twice.
 
 **3. On GitHub,** in **Settings → Environments**, create an environment named `npm`. Optionally add yourself as a required reviewer, so each release waits for your approval.
 
