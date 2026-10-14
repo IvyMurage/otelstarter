@@ -20,6 +20,7 @@ jobs:
     # The "npm" environment can require manual approval before publishing.
     environment: npm
     permissions:
+      contents: read # job permissions replace the top-level ones, so checkout needs this again
       id-token: write # lets npm verify this workflow's identity
     defaults:
       run:
