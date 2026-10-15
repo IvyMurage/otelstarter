@@ -86,6 +86,24 @@ func TestCheckPackages(t *testing.T) {
 	}
 }
 
+// A Node.js project on the bundle an earlier otelstarter installed still
+// sends telemetry, so a missing SDK must not fail validate in its CI.
+func TestCheckPackagesNodeBundleIsNotAFailure(t *testing.T) {
+	lang := project.Language{
+		OpenTelemetry:   []string{"@opentelemetry/auto-instrumentations-node"},
+		Instrumentation: []project.Instrumentation{{Package: "otelstarter"}},
+	}
+	for _, r := range checkPackages(lang) {
+		if r.Status == Fail {
+			t.Errorf("checkPackages() failed: %q, want only a warning", r.Title)
+		}
+	}
+	lang.OpenTelemetry = nil
+	if results := checkPackages(lang); results[0].Status != Fail {
+		t.Errorf("without the bundle, checkPackages() = %+v, want a failure", results[0])
+	}
+}
+
 // project writes a set-up Python project whose otel.env points at endpoint.
 func setUpProject(t *testing.T, endpoint string) string {
 	t.Helper()

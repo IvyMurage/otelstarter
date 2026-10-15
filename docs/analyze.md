@@ -80,7 +80,7 @@ Node.js details:
 
 ## Recommended instrumentation (Node.js)
 
-Node.js apps get two packages: `@opentelemetry/api`, and `@opentelemetry/auto-instrumentations-node`, which bundles instrumentation for about 40 libraries and loads with zero code changes through `--require`.
+Node.js apps get the `otelstarter` SDK, plus one `@opentelemetry/instrumentation-<name>` package per detected library. For example, an Express + pg app gets `otelstarter`, `@opentelemetry/instrumentation-express` and `@opentelemetry/instrumentation-pg`. The SDK loads with zero code changes through `--require otelstarter/register`, and already includes http, `fetch` (undici), runtime metrics and pino. winston also gets `@opentelemetry/winston-transport`, which sends its logs.
 
 **Only what the app uses is switched on.** `analyze` lists the instrumentations to enable: always `http`, `undici` (for `fetch`) and `runtime-node`, plus one per detected library, for example `http, undici, runtime-node, express, pg, pino`. `init` sets this list as `OTEL_NODE_ENABLED_INSTRUMENTATIONS`, so the other instrumentations are never loaded.
 
@@ -88,6 +88,7 @@ Notes explain the gaps:
 - **No logging library.** OpenTelemetry for Node does not export `console.log`; logs reach the backend only through pino, winston or bunyan.
 - **ES-module apps** (`"type": "module"`) are not supported yet.
 - **Fastify and Prisma** need their own instrumentation packages (`@fastify/otel`, `@prisma/instrumentation`).
+- **`@opentelemetry/auto-instrumentations-node`,** the 80 MB bundle earlier otelstarter versions installed. `analyze` suggests moving to the SDK.
 
 ## Recommended instrumentation (Python)
 

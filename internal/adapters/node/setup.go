@@ -9,12 +9,34 @@ import (
 	"github.com/IvyMurage/otelstarter/internal/project"
 )
 
-// The tested versions init pins. The API and the bundle are released
-// separately, so each has its own version.
-const (
-	autoVersion = "0.80.0"
-	apiVersion  = "1.9.1"
-)
+// SDKVersion is the otelstarter npm package version init pins.
+const SDKVersion = "0.1.1"
+
+// pins are the tested versions init pins. All instrumentations use
+// @opentelemetry/instrumentation 0.223, the version the SDK is built on, so
+// npm installs one copy of it.
+var pins = map[string]string{
+	sdkPackage: SDKVersion,
+
+	instrumentationPackage("amqplib"):     "0.70.0",
+	instrumentationPackage("bunyan"):      "0.68.0",
+	instrumentationPackage("express"):     "0.71.0",
+	instrumentationPackage("graphql"):     "0.71.0",
+	instrumentationPackage("hapi"):        "0.69.0",
+	instrumentationPackage("ioredis"):     "0.71.0",
+	instrumentationPackage("kafkajs"):     "0.32.0",
+	instrumentationPackage("knex"):        "0.67.0",
+	instrumentationPackage("koa"):         "0.71.0",
+	instrumentationPackage("mongodb"):     "0.76.0",
+	instrumentationPackage("mongoose"):    "0.69.0",
+	instrumentationPackage("mysql"):       "0.69.0",
+	instrumentationPackage("mysql2"):      "0.69.0",
+	instrumentationPackage("nestjs-core"): "0.69.0",
+	instrumentationPackage("pg"):          "0.75.0",
+	instrumentationPackage("redis"):       "0.71.0",
+	instrumentationPackage("winston"):     "0.67.0",
+	"@opentelemetry/winston-transport":    "0.33.0",
+}
 
 // EnvVars are the Node.js-specific settings for otel.env.
 func EnvVars(lang project.Language) []project.EnvVar {
@@ -24,33 +46,19 @@ func EnvVars(lang project.Language) []project.EnvVar {
 			Value:   strings.Join(lang.Enabled, ","),
 			Comment: "Instrumentations to load: only those for libraries this app uses.",
 		},
-		{
-			// Without this, startup tries cloud metadata servers (GCP, AWS…)
-			// and prints a warning on machines outside those clouds.
-			Name:    "OTEL_NODE_RESOURCE_DETECTORS",
-			Value:   "env,host,os,process",
-			Comment: "Describe the service from the environment and host, without probing cloud metadata servers.",
-		},
 	}
 }
 
-// MissingPackages returns pinned packages, such as
-// "@opentelemetry/api@1.9.1", that the project does not have yet.
+// MissingPackages returns pinned packages, such as "otelstarter@0.1.1",
+// that the project does not have yet.
 func MissingPackages(lang project.Language) []string {
 	var pkgs []string
 	for _, inst := range lang.Instrumentation {
 		if !inst.Installed {
-			pkgs = append(pkgs, inst.Package+"@"+pinnedVersion(inst.Package))
+			pkgs = append(pkgs, inst.Package+"@"+pins[inst.Package])
 		}
 	}
 	return pkgs
-}
-
-func pinnedVersion(pkg string) string {
-	if pkg == apiPackage {
-		return apiVersion
-	}
-	return autoVersion
 }
 
 // InstallCommand returns the command that adds pkgs with exact versions.
@@ -71,7 +79,14 @@ func InstallCommand(packageManager string, pkgs []string) string {
 
 // Essential reports whether a package is required for any telemetry.
 func Essential(pkg string) bool {
-	return pkg == apiPackage || pkg == autoPackage
+	return pkg == sdkPackage
+}
+
+// UsesBundle reports whether the project declares the instrumentation bundle
+// an earlier otelstarter installed. Such a project still sends telemetry
+// without the SDK, so a missing SDK is a reason to migrate, not a failure.
+func UsesBundle(lang project.Language) bool {
+	return slices.Contains(lang.OpenTelemetry, legacyPackage)
 }
 
 // launchers are programs that start Node.js, so run instruments the
@@ -83,20 +98,45 @@ func LaunchesNode(command []string) bool {
 	return len(command) > 0 && slices.Contains(launchers, filepath.Base(command[0]))
 }
 
-// WithRegister adds --require RegisterModule to an existing NODE_OPTIONS
-// value, keeping whatever was there.
-func WithRegister(nodeOptions string) string {
-	flag := "--require " + RegisterModule
-	if strings.Contains(nodeOptions, RegisterModule) {
+// WithRegister adds --require module to an existing NODE_OPTIONS value,
+// keeping whatever was there. Nothing is added when a loader is already
+// required, so the app is never instrumented twice.
+func WithRegister(nodeOptions, module string) string {
+	if strings.Contains(nodeOptions, RegisterModule) || strings.Contains(nodeOptions, legacyRegisterModule) {
 		return nodeOptions
 	}
-	return strings.TrimSpace(nodeOptions + " " + flag)
+	return strings.TrimSpace(nodeOptions + " --require " + module)
 }
 
-// Installed reports whether the instrumentation package is installed in
-// dir's node_modules. It checks the package itself: "/register" is mapped
-// to a file inside the package through its package.json "exports".
-func Installed(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, "node_modules", filepath.FromSlash(autoPackage), "package.json"))
+// Loader returns the module run loads with --require: the SDK's when it is
+// installed in dir's node_modules, else the bundle's, for projects set up
+// by an earlier otelstarter. ok is false when neither is installed.
+func Loader(dir string) (module string, ok bool) {
+	switch {
+	case installed(dir, sdkPackage):
+		return RegisterModule, true
+	case installed(dir, legacyPackage):
+		return legacyRegisterModule, true
+	}
+	return "", false
+}
+
+// NotInstalled returns the declared packages lang recommends that are
+// missing from dir's node_modules, usually because npm install has not
+// run since they were added.
+func NotInstalled(dir string, lang project.Language) []string {
+	var missing []string
+	for _, inst := range lang.Instrumentation {
+		if inst.Installed && !installed(dir, inst.Package) {
+			missing = append(missing, inst.Package)
+		}
+	}
+	return missing
+}
+
+// installed checks for the package's package.json: "/register" is mapped to
+// a file inside the package through its "exports".
+func installed(dir, pkg string) bool {
+	_, err := os.Stat(filepath.Join(dir, "node_modules", filepath.FromSlash(pkg), "package.json"))
 	return err == nil
 }

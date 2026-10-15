@@ -80,12 +80,14 @@ opentelemetry-distro==0.66b0
 
 | Package manager | You run |
 |-----------------|---------|
-| npm | `npm install --save-exact @opentelemetry/api@1.9.1 @opentelemetry/auto-instrumentations-node@0.80.0` |
+| npm | `npm install --save-exact otelstarter@0.1.1 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
 | yarn / pnpm / bun | the same packages with `yarn add --exact`, `pnpm add --save-exact` or `bun add --exact` |
 
-`otel.env` gets two Node.js settings on top of the shared ones:
-- **`OTEL_NODE_ENABLED_INSTRUMENTATIONS`** loads only the instrumentations for libraries the app uses, for example `http,undici,runtime-node,express,pg,pino`.
-- **`OTEL_NODE_RESOURCE_DETECTORS=env,host,os,process`** stops startup from probing cloud metadata servers, which prints a warning outside those clouds.
+That is the `otelstarter` SDK, plus one instrumentation package per library the app uses. All of them are built on the same OpenTelemetry core version, so npm installs it once. An Express + pg app measured 46 MB of `node_modules` in total.
+
+`otel.env` gets one Node.js setting on top of the shared ones: **`OTEL_NODE_ENABLED_INSTRUMENTATIONS`**, the instrumentations the SDK loads, for example `http,undici,runtime-node,express,pg,pino`.
+
+**Set up by an earlier otelstarter?** Those versions installed `@opentelemetry/auto-instrumentations-node`, an 80 MB bundle. It keeps working: `run` uses its loader while the SDK is not installed, and `validate` warns. To move, run `init` again and the install command it prints, then remove the bundle and `@opentelemetry/api` if nothing else uses them. `OTEL_NODE_RESOURCE_DETECTORS` in an older `otel.env` is no longer needed; the SDK never probes cloud metadata servers.
 
 The start command is `otelstarter run -- npm start`, or your own command. Logs reach the backend only through pino, winston or bunyan: OpenTelemetry for Node does not export `console.log`.
 
@@ -128,15 +130,13 @@ See [performance](performance.md) for what instrumentation costs.
 
 ### Node.js in production: SIGTERM
 
-OpenTelemetry's loader (`@opentelemetry/auto-instrumentations-node/register`) handles **SIGTERM** by flushing telemetry, but it **does not exit the process**. Docker, Kubernetes and most process managers stop apps with SIGTERM, so an instrumented app keeps running until it is force-killed (usually after 10–30 seconds).
+Docker, Kubernetes and most process managers stop apps with **SIGTERM**. `otelstarter/register` flushes telemetry and then exits, as Node would without instrumentation. If your app has its own SIGTERM handler, that handler stays in charge of exiting.
 
-Until otelstarter ships its own loader, give your app a SIGTERM handler that shuts the server down and exits:
+OpenTelemetry's bundle loader (`@opentelemetry/auto-instrumentations-node/register`) flushes but **does not exit**, so an app still on it keeps running until it is force-killed, usually after 10–30 seconds. Move to the SDK, or give the app a handler that shuts the server down and exits:
 
 ```js
 process.on('SIGTERM', () => server.close(() => process.exit(0)));
 ```
-
-`otelstarter run` is not affected: Ctrl+C sends SIGINT.
 
 ## Limitations
 

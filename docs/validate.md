@@ -55,8 +55,8 @@ $ otelstarter validate
 | Python | The Python that will run the app is older than 3.10. That is the one next to `opentelemetry-instrument` if found, else `python3` or `python` on PATH. It runs `--version` in the project folder, so pyenv's `.python-version` applies |
 | SDK version | `otelstarter` is pinned to an older version than the one this otelstarter pins (warning). `init` adds missing packages but does not change existing pins |
 | Node.js version | The `node` on PATH is older than 18.19 (or 20.0–20.5). Runs `node --version` in the project folder, so `.nvmrc` with nvm or fnm applies |
-| Node.js packages installed | `@opentelemetry/auto-instrumentations-node` is declared but not in `node_modules` (warning) |
-| Node.js advice | No logging library (console.log is not exported), ES-module app, or Fastify/Prisma, which need their own instrumentation (warnings) |
+| Node.js packages installed | Neither `otelstarter` nor the older bundle is in `node_modules`, or a declared instrumentation package is not, usually because `npm install` has not run (warning) |
+| Node.js advice | No logging library (console.log is not exported), ES-module app, Fastify/Prisma, which need their own instrumentation, or the app still uses `@opentelemetry/auto-instrumentations-node` (warnings). While it does, a missing `otelstarter` is a warning, not a problem, because the bundle still sends telemetry |
 | Launcher | `opentelemetry-instrument` is not on `PATH`, usually because the virtual environment is not active (warning) |
 
 The Collector check sends an **empty** export request (`{}`) for each signal. A Collector answers `200` and stores nothing, so it adds no test data to your backend.

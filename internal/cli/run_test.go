@@ -103,7 +103,7 @@ func TestPrepareAppForNode(t *testing.T) {
 		t.Fatalf("prepareApp() without node_modules: error = %v, want a 'not installed' error", err)
 	}
 
-	pkgDir := filepath.Join("node_modules", "@opentelemetry", "auto-instrumentations-node")
+	pkgDir := filepath.Join("node_modules", "otelstarter")
 	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestPrepareAppForNode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("prepareApp() error = %v", err)
 	}
-	assertEnv(t, app.Env, "NODE_OPTIONS=--max-old-space-size=4096 --require @opentelemetry/auto-instrumentations-node/register")
+	assertEnv(t, app.Env, "NODE_OPTIONS=--max-old-space-size=4096 --require otelstarter/register")
 	if app.Args[0] != "true" {
 		t.Errorf("command = %q, want it unchanged (Node is instrumented through NODE_OPTIONS)", app.Args)
 	}

@@ -31,4 +31,10 @@ The `otelstarter` npm package (`sdk/node`, TypeScript) provides:
 - An Express + pg app measured 45 MB of `node_modules` in total, against more than 83 MB for the bundle alone.
 - otelstarter now owns a small SDK setup (`sdk.ts`) that must follow OpenTelemetry releases; experimental `0.x` packages are pinned to one minor version.
 - `init` and `run` move from the bundle to `otelstarter` plus the detected `@opentelemetry/instrumentation-<name>` packages in a follow-up PR.
+
+## Update, 2026-10-15
+
+That follow-up is done. `init` pins `otelstarter` and one instrumentation package per detected library, each at a tested version built on the same `@opentelemetry/instrumentation` 0.223 as the SDK, so npm installs the core once (Express + pg: 46 MB). winston also gets `@opentelemetry/winston-transport`, without which its logs are not sent. `OTEL_NODE_RESOURCE_DETECTORS` is no longer written: the SDK chooses its detectors itself.
+
+Projects set up with the bundle keep working: `run` uses the bundle's loader while the SDK is not installed, and `validate` warns instead of failing, so their CI does not break.
 - Cleaning spans after they end updates the finished span's attribute object in place. That relies on the SDK not freezing it; a test covers it.
