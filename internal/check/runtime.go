@@ -68,7 +68,7 @@ func checkPackages(lang project.Language) []Result {
 	for _, inst := range lang.Instrumentation {
 		switch {
 		case inst.Installed:
-		case python.Essential(inst.Package), node.Essential(inst.Package):
+		case python.Essential(inst.Package), node.Essential(inst.Package) && !node.UsesBundle(lang):
 			missingEssential = append(missingEssential, inst.Package)
 		default:
 			missingOther = append(missingOther, inst.Package)

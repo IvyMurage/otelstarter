@@ -12,7 +12,7 @@ import (
 )
 
 // checkNode reports whether the Node.js that will run the app is new enough
-// for @opentelemetry/auto-instrumentations-node (^18.19.0 || >=20.6.0). It
+// for the otelstarter SDK and OpenTelemetry (^18.19.0 || >=20.6.0). It
 // only runs "node --version", in the project folder so version managers
 // such as nvm or fnm that read .nvmrc there apply.
 func checkNode(ctx context.Context, dir string) Result {
@@ -39,18 +39,23 @@ func checkNode(ctx context.Context, dir string) Result {
 	supported := (major == 18 && minor >= 19) || (major == 20 && minor >= 6) || major > 20
 	if !supported {
 		return fail(fmt.Sprintf("Node.js %s is too old for OpenTelemetry (%s)", version, path),
-			"@opentelemetry/auto-instrumentations-node needs Node.js 18.19+ or 20.6+.",
+			"OpenTelemetry for Node needs Node.js 18.19+ or 20.6+.",
 			"Install Node.js 20 or newer, for example with nvm: nvm install 20 && nvm use 20.")
 	}
 	return pass(fmt.Sprintf("Node.js %s (%s)", version, path))
 }
 
-// checkNodeModules reports whether the instrumentation package is installed,
-// not just declared: run loads it from node_modules.
-func checkNodeModules(dir string) Result {
-	if !node.Installed(dir) {
+// checkNodeModules reports whether the packages are installed, not just
+// declared: run loads them from node_modules.
+func checkNodeModules(dir string, lang project.Language) Result {
+	if _, ok := node.Loader(dir); !ok {
 		return warn(node.RegisterModule+" is not installed",
 			"otelstarter run loads it from node_modules, so the app would start without instrumentation.",
+			"Install your dependencies, for example: npm install.")
+	}
+	if missing := node.NotInstalled(dir, lang); len(missing) > 0 {
+		return warn("Declared but not installed: "+strings.Join(missing, ", "),
+			"The SDK skips instrumentation it cannot find, so calls through these libraries will not appear in traces.",
 			"Install your dependencies, for example: npm install.")
 	}
 	return pass("Instrumentation installed in node_modules")

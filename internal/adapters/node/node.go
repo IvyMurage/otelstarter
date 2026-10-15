@@ -22,30 +22,54 @@ var Manifests = []string{"package.json"}
 
 const maxManifestSize = 1 << 20 // 1 MiB
 
-// The zero-code package and the API it needs.
 const (
-	autoPackage = "@opentelemetry/auto-instrumentations-node"
-	apiPackage  = "@opentelemetry/api"
+	// sdkPackage is otelstarter's own SDK (sdk/node): exporters, redaction,
+	// query sanitising and structured logs. It loads one instrumentation
+	// package per library the app uses.
+	sdkPackage = "otelstarter"
 	// RegisterModule is loaded with --require to start instrumentation.
-	RegisterModule = autoPackage + "/register"
+	RegisterModule = sdkPackage + "/register"
+
+	// legacyPackage is OpenTelemetry's bundle of about 40 instrumentations,
+	// which earlier otelstarter versions installed. run still uses its loader
+	// when the SDK is not installed, so those projects keep working.
+	legacyPackage        = "@opentelemetry/auto-instrumentations-node"
+	legacyRegisterModule = legacyPackage + "/register"
 )
 
 // alwaysEnabled are switched on for every app: incoming and outgoing HTTP
 // (node:http, and undici for fetch) and runtime metrics.
 var alwaysEnabled = []string{"http", "undici", "runtime-node"}
 
+// inSDK are the instrumentations the SDK depends on itself, so the app
+// needs no package for them.
+var inSDK = []string{"http", "undici", "runtime-node", "pino"}
+
+// instrumentationPackage is the npm package for an instrumentation name, as
+// used in OTEL_NODE_ENABLED_INSTRUMENTATIONS: "pg" is
+// @opentelemetry/instrumentation-pg. The SDK loads it by the same rule.
+func instrumentationPackage(name string) string {
+	return "@opentelemetry/instrumentation-" + name
+}
+
+// companions are packages an instrumentation needs to do its whole job.
+// The winston instrumentation sends logs only through the transport.
+var companions = map[string][]string{
+	"winston": {"@opentelemetry/winston-transport"},
+}
+
 // knownPackage describes an npm package that matters for observability.
 type knownPackage struct {
 	framework string // display name when it is a web framework
 	category  string // dependency category otherwise
-	// instrumentation is the short name of the bundled instrumentation
+	// instrumentation is the short name of the OpenTelemetry instrumentation
 	// (OTEL_NODE_ENABLED_INSTRUMENTATIONS uses these). Empty when
-	// @opentelemetry/auto-instrumentations-node has none for it.
+	// OpenTelemetry has none for it.
 	instrumentation string
 }
 
-// knownPackages is checked against the instrumentations bundled in
-// @opentelemetry/auto-instrumentations-node 0.80.0.
+// knownPackages lists the libraries otelstarter recognises. Each
+// instrumentation has a tested version in setup.go.
 var knownPackages = map[string]knownPackage{
 	"express":        {framework: "Express", instrumentation: "express"},
 	"@nestjs/core":   {framework: "NestJS", instrumentation: "nestjs-core"},
@@ -122,6 +146,7 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 		}
 		lang.Notes = append(lang.Notes, gapNote(name)...)
 	}
+	declared := func(p string) bool { return has(pkg.Dependencies, p) }
 	sort.Slice(lang.Dependencies, func(i, j int) bool {
 		if lang.Dependencies[i].Category != lang.Dependencies[j].Category {
 			return lang.Dependencies[i].Category < lang.Dependencies[j].Category
@@ -130,14 +155,26 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	})
 	lang.Enabled = enabled
 
-	lang.Instrumentation = []project.Instrumentation{
-		{Package: apiPackage, Purpose: "OpenTelemetry API", Installed: has(pkg.Dependencies, apiPackage)},
-		{Package: autoPackage, Purpose: "Zero-code instrumentation, loaded with --require",
-			Installed: has(pkg.Dependencies, autoPackage)},
+	lang.Instrumentation = []project.Instrumentation{{Package: sdkPackage,
+		Purpose: "Traces, metrics and JSON logs, with redaction; loaded with --require", Installed: declared(sdkPackage)}}
+	for _, name := range enabled {
+		if slices.Contains(inSDK, name) {
+			continue
+		}
+		for _, p := range append([]string{instrumentationPackage(name)}, companions[name]...) {
+			lang.Instrumentation = append(lang.Instrumentation,
+				project.Instrumentation{Package: p, Purpose: purpose(name), Installed: declared(p)})
+		}
 	}
 	lang.Start = startCommand(pkg, lang.PackageManager)
 	lang.Activation = fmt.Sprintf(`NODE_OPTIONS="--require %s" %s`, RegisterModule, lang.Start)
 
+	if declared(legacyPackage) && !declared(sdkPackage) {
+		lang.Notes = append(lang.Notes, "This app uses the "+legacyPackage+" bundle, which is over 80 MB. "+
+			"otelstarter now uses its own SDK with only the instrumentations the app needs, and adds "+
+			"redaction, query sanitising and JSON logs. Run otelstarter init and the install command it prints, then "+
+			"remove the bundle and @opentelemetry/api if nothing else uses them.")
+	}
 	if !hasLogger {
 		lang.Notes = append(lang.Notes, "No logging library found (pino, winston or bunyan). OpenTelemetry for Node "+
 			"does not export console.log, so your logs will not reach the backend. Use pino or winston to send them, "+
@@ -151,18 +188,35 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 	return lang, nil
 }
 
-// gapNote explains libraries the bundled package cannot instrument.
+// gapNote explains libraries OpenTelemetry's instrumentations do not cover.
 func gapNote(name string) []string {
 	switch name {
 	case "fastify":
-		return []string{"Fastify is not instrumented by @opentelemetry/auto-instrumentations-node; incoming " +
+		return []string{"Fastify is not instrumented by OpenTelemetry's own packages; incoming " +
 			"requests are still traced through the http instrumentation, but without route names. " +
 			"Fastify's own plugin, @fastify/otel, adds them."}
 	case "@prisma/client":
-		return []string{"Prisma queries are not instrumented by @opentelemetry/auto-instrumentations-node; " +
+		return []string{"Prisma queries are not instrumented by OpenTelemetry's own packages; " +
 			"Prisma's own @prisma/instrumentation adds them."}
 	}
 	return nil
+}
+
+// purpose describes what an instrumentation package adds, for analyze.
+func purpose(name string) string {
+	for pkg, known := range knownPackages {
+		if known.instrumentation != name {
+			continue
+		}
+		if known.category == "Logging" {
+			return "Logs from " + pkg + ", with trace IDs"
+		}
+		if known.framework != "" {
+			return known.framework + " routes and middleware"
+		}
+		return known.category + " calls (" + pkg + ")"
+	}
+	return name
 }
 
 // startCommand guesses how the app is started, to show where the

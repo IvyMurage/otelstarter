@@ -33,6 +33,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Changed
 
+- **Node.js:** `init` now installs the `otelstarter` SDK plus one `@opentelemetry/instrumentation-<name>` package per detected library, instead of `@opentelemetry/api` and the 80 MB `@opentelemetry/auto-instrumentations-node` bundle. `run` loads `otelstarter/register`, so Node.js apps get redaction, query sanitising, JSON logs and a normal exit on SIGTERM. Projects still on the bundle keep working: `run` uses its loader until the SDK is installed, and `validate` warns, without failing, until they move. `otel.env` no longer sets `OTEL_NODE_RESOURCE_DETECTORS`. `validate` also warns when a declared instrumentation package is not in `node_modules`.
 - Python `otel.env` no longer sets `OTEL_PYTHON_LOG_CORRELATION`: the JSON logs carry `trace_id` and `span_id`. With plain `otlp` exporters, recent FastAPI versions add their own exporter and send every span twice; the new `otelstarter` exporters avoid that.
 - When the app exits by itself, `run` keeps the stack running in a terminal, so the crash's telemetry stays in Grafana. Without a terminal it still stops.
 - **Python SDK 0.2.0 (breaking):** problems with an event are logged as warnings on the `otelstarter` logger instead of being raised as `OtelStarterWarning`, which is removed. They now look like the app's own logs and reach the backend.

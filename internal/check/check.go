@@ -90,7 +90,7 @@ func Run(ctx context.Context, opts Options) []Result {
 		add(checkLauncher())
 		add(checkPython(ctx, proj.Path))
 	} else {
-		add(checkNodeModules(proj.Path))
+		add(checkNodeModules(proj.Path, lang))
 		add(checkNodeAdvice(lang)...)
 		add(checkNode(ctx, proj.Path))
 	}

@@ -144,14 +144,15 @@ func TestBuildPlanNodeProject(t *testing.T) {
 	for _, want := range []string{
 		"OTEL_SERVICE_NAME=shop\n",
 		"OTEL_NODE_ENABLED_INSTRUMENTATIONS=http,undici,runtime-node,express,pg,pino\n",
-		"OTEL_NODE_RESOURCE_DETECTORS=env,host,os,process\n",
 	} {
 		if !strings.Contains(env, want) {
 			t.Errorf("otel.env is missing %q", want)
 		}
 	}
-	if len(plan.Commands) != 1 || !strings.HasPrefix(plan.Commands[0], "yarn add --exact @opentelemetry/api@") {
-		t.Errorf("Commands = %q, want one yarn add --exact command", plan.Commands)
+	// pino needs no package: the SDK includes its instrumentation.
+	wantCmd := "yarn add --exact otelstarter@0.1.1 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0"
+	if len(plan.Commands) != 1 || plan.Commands[0] != wantCmd {
+		t.Errorf("Commands = %q, want [%q]", plan.Commands, wantCmd)
 	}
 	if plan.StartCommand != "otelstarter run -- yarn start" {
 		t.Errorf("StartCommand = %q", plan.StartCommand)

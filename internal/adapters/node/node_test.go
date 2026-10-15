@@ -56,26 +56,50 @@ func TestAnalyzeExpressApp(t *testing.T) {
 	if !reflect.DeepEqual(lang.Enabled, wantEnabled) {
 		t.Errorf("Enabled = %v, want %v", lang.Enabled, wantEnabled)
 	}
-	if lang.Activation != `NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register" pnpm start` {
+	if lang.Activation != `NODE_OPTIONS="--require otelstarter/register" pnpm start` {
 		t.Errorf("Activation = %q", lang.Activation)
 	}
 	if len(lang.Notes) != 0 {
 		t.Errorf("Notes = %q, want none: a logger is present and the app is CommonJS", lang.Notes)
 	}
+	var pkgs []string
+	for _, inst := range lang.Instrumentation {
+		pkgs = append(pkgs, inst.Package)
+	}
+	// One package per library; pino is part of the SDK.
+	wantPkgs := []string{"otelstarter", "@opentelemetry/instrumentation-express",
+		"@opentelemetry/instrumentation-ioredis", "@opentelemetry/instrumentation-pg"}
+	if !reflect.DeepEqual(pkgs, wantPkgs) {
+		t.Errorf("Instrumentation = %v, want %v", pkgs, wantPkgs)
+	}
+}
+
+func TestAnalyzeWinstonNeedsTransport(t *testing.T) {
+	lang := analyze(t, map[string]string{"package.json": `{"dependencies": {"winston": "^3"}}`})
+	var pkgs []string
+	for _, inst := range lang.Instrumentation {
+		pkgs = append(pkgs, inst.Package)
+	}
+	want := []string{"otelstarter", "@opentelemetry/instrumentation-winston", "@opentelemetry/winston-transport"}
+	if !reflect.DeepEqual(pkgs, want) {
+		t.Errorf("Instrumentation = %v, want %v", pkgs, want)
+	}
 }
 
 func TestAnalyzeMarksInstalledPackages(t *testing.T) {
 	lang := analyze(t, map[string]string{"package.json": `{"dependencies": {
-		"@opentelemetry/auto-instrumentations-node": "0.80.0", "express": "^4"}}`})
+		"otelstarter": "0.1.1", "@opentelemetry/instrumentation-express": "0.71.0", "express": "^4", "pg": "^8"}}`})
 
 	installed := map[string]bool{}
 	for _, inst := range lang.Instrumentation {
 		installed[inst.Package] = inst.Installed
 	}
-	if !installed["@opentelemetry/auto-instrumentations-node"] || installed["@opentelemetry/api"] {
-		t.Errorf("Installed = %v, want only auto-instrumentations-node", installed)
+	want := map[string]bool{"otelstarter": true, "@opentelemetry/instrumentation-express": true,
+		"@opentelemetry/instrumentation-pg": false}
+	if !reflect.DeepEqual(installed, want) {
+		t.Errorf("Installed = %v, want %v", installed, want)
 	}
-	if !reflect.DeepEqual(lang.OpenTelemetry, []string{"@opentelemetry/auto-instrumentations-node"}) {
+	if !reflect.DeepEqual(lang.OpenTelemetry, []string{"@opentelemetry/instrumentation-express"}) {
 		t.Errorf("OpenTelemetry = %v", lang.OpenTelemetry)
 	}
 }
@@ -90,6 +114,8 @@ func TestAnalyzeNotes(t *testing.T) {
 		{"ES-module app", `{"type": "module", "dependencies": {"pino": "^9"}}`, "does not support ES modules yet"},
 		{"Fastify", `{"dependencies": {"fastify": "^5", "pino": "^9"}}`, "@fastify/otel"},
 		{"Prisma", `{"dependencies": {"@prisma/client": "^5", "pino": "^9"}}`, "@prisma/instrumentation"},
+		{"bundle from an earlier otelstarter", `{"dependencies": {"@opentelemetry/auto-instrumentations-node": "0.80.0", "pino": "^9"}}`,
+			"otelstarter now uses its own SDK"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -145,22 +171,17 @@ func TestAnalyzeInvalidPackageJSON(t *testing.T) {
 	}
 }
 
-// Every instrumentation name must exist in the bundled package, or
-// OTEL_NODE_ENABLED_INSTRUMENTATIONS would silently skip it.
-func TestInstrumentationNamesAreBundled(t *testing.T) {
-	bundled := strings.Split("amqplib aws-lambda aws-sdk bunyan cassandra-driver connect cucumber dataloader dns "+
-		"express fs generic-pool graphql grpc hapi host-metrics http ioredis kafkajs knex koa lru-memoizer "+
-		"memcached mongodb mongoose mysql mysql2 nestjs-core net openai oracledb pg pino redis restify router "+
-		"runtime-node socket.io tedious undici winston", " ") // @opentelemetry/auto-instrumentations-node 0.80.0
-	names := slices.Clone(alwaysEnabled)
-	for _, p := range knownPackages {
-		if p.instrumentation != "" {
-			names = append(names, p.instrumentation)
+// Every instrumentation init can recommend must have a tested version, or
+// the install command would end in "@" with no version.
+func TestEveryRecommendedPackageIsPinned(t *testing.T) {
+	for name, known := range knownPackages {
+		if known.instrumentation == "" || slices.Contains(inSDK, known.instrumentation) {
+			continue
 		}
-	}
-	for _, n := range names {
-		if !slices.Contains(bundled, n) {
-			t.Errorf("instrumentation %q is not bundled in auto-instrumentations-node 0.80.0", n)
+		for _, p := range append([]string{instrumentationPackage(known.instrumentation)}, companions[known.instrumentation]...) {
+			if pins[p] == "" {
+				t.Errorf("%s: %s has no pinned version in setup.go", name, p)
+			}
 		}
 	}
 }
