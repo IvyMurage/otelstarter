@@ -80,7 +80,7 @@ opentelemetry-distro==0.66b0
 
 | Package manager | You run |
 |-----------------|---------|
-| npm | `npm install --save-exact otelstarter@0.1.3 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
+| npm | `npm install --save-exact otelstarter@0.1.4 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
 | yarn / pnpm / bun | the same packages with `yarn add --exact`, `pnpm add --save-exact` or `bun add --exact` |
 
 That is the `otelstarter` SDK, plus one instrumentation package per library the app uses. All of them are built on the same OpenTelemetry core version, so npm installs it once. An Express + pg app measured 46 MB of `node_modules` in total.
@@ -128,9 +128,15 @@ OpenTelemetry's Python packages require each other at exact versions, so otelsta
 
 See [performance](performance.md) for what instrumentation costs.
 
-### Node.js in production: SIGTERM
+### In production: SIGTERM
 
-Docker, Kubernetes and most process managers stop apps with **SIGTERM**. `otelstarter/register` flushes telemetry and then exits, as Node would without instrumentation. If your app has its own SIGTERM handler, that handler stays in charge of exiting.
+Docker, Kubernetes and most process managers stop apps with **SIGTERM**. With otelstarter, both Node.js and Python apps:
+- **send the telemetry still waiting,** spending at most 3 seconds on it, so a Collector that is down cannot hold the shutdown up;
+- **then stop exactly as they would without otelstarter,** ended by the signal.
+
+If your app has its own SIGTERM handler, that handler stays in charge, and the telemetry is sent when the process exits. gunicorn and uvicorn have their own handlers, so this is the case for them. With the Collector down, a two-worker gunicorn measured about 6.5 s to stop: about 3 s for the workers, then 3 s for the master.
+
+Without otelstarter, a Python app stopped by SIGTERM loses up to 5 seconds of spans and logs that were still waiting to be sent.
 
 OpenTelemetry's bundle loader (`@opentelemetry/auto-instrumentations-node/register`) flushes but **does not exit**, so an app still on it keeps running until it is force-killed, usually after 10–30 seconds. Move to the SDK, or give the app a handler that shuts the server down and exits:
 

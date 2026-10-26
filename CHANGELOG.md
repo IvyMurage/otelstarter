@@ -6,6 +6,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- `compat/run.py`, run in CI: real Express, NestJS 11 and 12, Flask and FastAPI apps, also under gunicorn and uvicorn with workers, must answer exactly the same with otelstarter as without it. They must also stop cleanly with the Collector up or down, send traces, logs and metrics, and leak no email address or password. See `compat/README.md`.
 - Release workflow for the Node.js SDK: pushing a `sdk-node-vX.Y.Z` tag tests and publishes it to npm through Trusted Publishing. The first version is published by hand; see `sdk/node/RELEASING.md`. Node.js SDK 0.1.1 is the first release through the workflow, with no code changes.
 - Python SDK 0.3.0: structured JSON logs (switched on automatically under `opentelemetry-instrument`), and `otelstarter` trace and log exporters that redact secrets and replace SQL values with `?` before export. `init` selects them in `otel.env` (`OTEL_TRACES_EXPORTER`/`OTEL_LOGS_EXPORTER=otelstarter`) and pins `otelstarter==0.3.0`. `validate` warns when an existing `otel.env` does not use them, and fails when it does but the SDK is missing or too old.
 - `sdk/conventions.json`: shared test cases that both SDKs run, so their redaction and sanitising cannot drift apart.
@@ -33,6 +34,10 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Changed
 
+- Node.js SDK 0.1.4 and Python SDK 0.3.1, from the new compatibility check:
+  - **Node.js:** logs from the app's own pino, winston or bunyan logger are redacted too. Before, `log.info({ password }, 'login')` reached the backend with the password.
+  - **Both, at shutdown:** the last telemetry is sent within at most 3 seconds, and SIGTERM then stops the app exactly as without otelstarter. Before, with the Collector down, a Node.js app took about 9 s to stop and a gunicorn or uvicorn worker 20–30 s. A Python app stopped by SIGTERM also lost its last batch.
+  - `init` pins `otelstarter@0.1.4` and `otelstarter==0.3.1`.
 - Node.js SDK 0.1.3: **ES-module apps** (`"type": "module"`, `.mjs`) are fully instrumented with the same `--require otelstarter/register`, on Node.js 22.14 or newer. Before, an ES-module Express app got HTTP spans but no Express route spans, and requests were named only `GET`. The import hook is only switched on for ES-module apps, so CommonJS apps keep their startup time and memory. `validate` warns when an ES-module app runs on an older Node.js, and `analyze` no longer says ES modules are unsupported. `init` pins `otelstarter@0.1.3`.
 - Node.js SDK 0.1.2: `logger` also accepts pino's argument order, `logger.info({ orderId }, 'order placed')` and `logger.error(err, 'payment failed')`. Before, the fields were silently dropped. `init` pins `otelstarter@0.1.2`.
 - **Node.js:** `init` now installs the `otelstarter` SDK plus one `@opentelemetry/instrumentation-<name>` package per detected library, instead of `@opentelemetry/api` and the 80 MB `@opentelemetry/auto-instrumentations-node` bundle. `run` loads `otelstarter/register`, so Node.js apps get redaction, query sanitising, JSON logs and a normal exit on SIGTERM. Projects still on the bundle keep working: `run` uses its loader until the SDK is installed, and `validate` warns, without failing, until they move. `otel.env` no longer sets `OTEL_NODE_RESOURCE_DETECTORS`. `validate` also warns when a declared instrumentation package is not in `node_modules`.

@@ -15,8 +15,8 @@ const quiet = {
   OTEL_SERVICE_NAME: 'shop', OTEL_RESOURCE_ATTRIBUTES: 'deployment.environment.name=test',
 };
 
-function run(args: string[], script: string) {
-  const child = spawn(process.execPath, [...args, '-e', script], { env: quiet });
+function run(args: string[], script: string, env: NodeJS.ProcessEnv = quiet) {
+  const child = spawn(process.execPath, [...args, '-e', script], { env });
   let out = '';
   child.stdout.on('data', (d) => (out += d));
   child.stderr.on('data', (d) => (out += d));
@@ -81,7 +81,23 @@ test('with otelstarter/register the app still exits on SIGTERM', async () => {
     once(child, 'exit'),
     new Promise<never>((_, reject) => setTimeout(() => reject(new Error('still running 5 s after SIGTERM')), 5000)),
   ]);
-  assert.equal(code, 143, `exit code ${code}, signal ${signal}`);
+  // Stopped by the signal, exactly like the app without otelstarter.
+  assert.equal(signal, 'SIGTERM', `exit code ${code}, signal ${signal}`);
+});
+
+test('SIGTERM does not wait long for a Collector that is down', async () => {
+  const collectorDown = {
+    ...quiet, OTEL_TRACES_EXPORTER: 'otlp', OTEL_METRICS_EXPORTER: 'otlp', OTEL_LOGS_EXPORTER: 'otlp',
+    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://127.0.0.1:9', // nothing listens there
+  };
+  const { child, output } = run(['--require', register], `
+    require('@opentelemetry/api').trace.getTracer('t').startSpan('unsent').end();
+    require('http').createServer((q, r) => r.end()).listen(0, () => console.log('listening'));`, collectorDown);
+  await waitFor(output, 'listening');
+  const t = Date.now();
+  child.kill('SIGTERM');
+  await once(child, 'exit');
+  assert.ok(Date.now() - t < 4000, `took ${Date.now() - t} ms`);
 });
 
 test("an app's own SIGTERM handler stays in charge", async () => {

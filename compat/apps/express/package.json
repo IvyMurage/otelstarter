@@ -1,0 +1,6 @@
+{
+  "name": "compat-express",
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "5.3.0", "pg": "8.23.1", "pino": "10.4.0" }
+}

@@ -13,7 +13,7 @@ import { BatchSpanProcessor, type SpanProcessor } from '@opentelemetry/sdk-trace
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { listFromEnv } from './config';
 import { hookImports, moduleNames } from './esm';
-import { PrivacySpanProcessor } from './processor';
+import { PrivacyLogRecordProcessor, PrivacySpanProcessor } from './processor';
 
 /**
  * Starts OpenTelemetry with only what the app needs: the three OTLP exporters
@@ -62,7 +62,9 @@ export function start(env: NodeJS.ProcessEnv = process.env): Started {
 
   const loggerProvider = new LoggerProvider({
     resource,
-    processors: exporterEnabled('OTEL_LOGS_EXPORTER', env) ? [new BatchLogRecordProcessor({ exporter: new OTLPLogExporter() })] : [],
+    processors: exporterEnabled('OTEL_LOGS_EXPORTER', env)
+      ? [new PrivacyLogRecordProcessor(new BatchLogRecordProcessor({ exporter: new OTLPLogExporter() }))] // clean, then export
+      : [],
   });
   logs.setGlobalLoggerProvider(loggerProvider);
 
