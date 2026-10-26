@@ -14,6 +14,10 @@ const { logger, event } = require('otelstarter');
 logger.info('order placed', { orderId: 'ord_1', password: 'hunter2' });
 // {"severity":"INFO","timestamp":"…","service.name":"shop","trace_id":"…","span_id":"…","orderId":"ord_1","password":"[REDACTED]","message":"order placed"}
 
+// pino's order works too:
+logger.info({ orderId: 'ord_1' }, 'order placed');
+logger.error(err, 'payment failed'); // the error is logged under "err", with its stack
+
 event('order.created', { domain: 'orders', outcome: 'success', entityType: 'order', entityId: 'ord_1' });
 ```
 

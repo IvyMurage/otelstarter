@@ -11,14 +11,24 @@ import { REDACTED, SENSITIVE_KEYS } from './redaction';
  *   {"severity":"INFO","timestamp":"2026-10-07T10:30:52.478Z","service.name":"shop",
  *    "environment":"local","trace_id":"…","span_id":"…","orderId":"ord_1","message":"order placed"}
  *
+ * pino's own order works too, so pino users need not change habits:
+ *
+ *   logger.info({ orderId: 'ord_1' }, 'order placed')
+ *   logger.error(err, 'payment failed')   // the error goes under "err"
+ *
  * Under otelstarter/register each line is also sent to OpenTelemetry, so it
  * appears in Grafana next to its trace.
  */
+export interface LogMethod {
+  (message: string, fields?: Record<string, unknown>): void;
+  (fields: Record<string, unknown> | Error, message?: string): void;
+}
+
 export interface Logger {
-  debug(message: string, fields?: Record<string, unknown>): void;
-  info(message: string, fields?: Record<string, unknown>): void;
-  warn(message: string, fields?: Record<string, unknown>): void;
-  error(message: string, fields?: Record<string, unknown>): void;
+  debug: LogMethod;
+  info: LogMethod;
+  warn: LogMethod;
+  error: LogMethod;
 }
 
 let instance: PinoLogger | undefined;
@@ -61,10 +71,21 @@ function redactPaths(): string[] {
   );
 }
 
-function log(level: keyof Logger) {
-  return (message: string, fields?: Record<string, unknown>): void => {
-    pinoLogger()[level](fields ?? {}, message);
+function log(level: keyof Logger): LogMethod {
+  return (first: unknown, second?: unknown): void => {
+    // otelstarter's order: (message, fields).
+    if (typeof first === 'string') {
+      pinoLogger()[level](isRecord(second) ? second : {}, first);
+      return;
+    }
+    // pino's order: (fields, message) or (error, message).
+    const fields = first instanceof Error ? { err: first } : isRecord(first) ? first : {};
+    pinoLogger()[level](fields, typeof second === 'string' ? second : undefined);
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export const logger: Logger = {

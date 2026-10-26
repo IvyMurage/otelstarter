@@ -51,6 +51,26 @@ test('logger prints structured JSON with context fields and redaction', async ()
   assert.equal(line.user.apiKey, '[REDACTED]');
 });
 
+test("pino's argument order keeps the fields", async () => {
+  const { child, output } = run([], `
+    const { logger } = require(${JSON.stringify(index)});
+    logger.info({ orderId: 'ord_1', password: 'hunter2' }, 'order placed');
+    logger.error(new Error('card declined'), 'payment failed');
+    logger.warn({ retry: 2 });`);
+  await once(child, 'exit');
+
+  const lines = output().trim().split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l));
+  assert.equal(lines.length, 3, output());
+  assert.equal(lines[0].message, 'order placed');
+  assert.equal(lines[0].orderId, 'ord_1');
+  assert.equal(lines[0].password, '[REDACTED]');
+  assert.equal(lines[1].severity, 'ERROR');
+  assert.equal(lines[1].message, 'payment failed');
+  assert.equal(lines[1].err.message, 'card declined');
+  assert.match(lines[1].err.stack, /Error: card declined/);
+  assert.equal(lines[2].retry, 2);
+});
+
 test('with otelstarter/register the app still exits on SIGTERM', async () => {
   const { child, output } = run(['--require', register], `
     require('http').createServer((q, r) => r.end()).listen(0, () => console.log('listening'));`);

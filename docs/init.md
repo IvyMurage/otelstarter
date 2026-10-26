@@ -80,7 +80,7 @@ opentelemetry-distro==0.66b0
 
 | Package manager | You run |
 |-----------------|---------|
-| npm | `npm install --save-exact otelstarter@0.1.1 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
+| npm | `npm install --save-exact otelstarter@0.1.2 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
 | yarn / pnpm / bun | the same packages with `yarn add --exact`, `pnpm add --save-exact` or `bun add --exact` |
 
 That is the `otelstarter` SDK, plus one instrumentation package per library the app uses. All of them are built on the same OpenTelemetry core version, so npm installs it once. An Express + pg app measured 46 MB of `node_modules` in total.

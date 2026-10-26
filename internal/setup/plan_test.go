@@ -150,7 +150,7 @@ func TestBuildPlanNodeProject(t *testing.T) {
 		}
 	}
 	// pino needs no package: the SDK includes its instrumentation.
-	wantCmd := "yarn add --exact otelstarter@0.1.1 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0"
+	wantCmd := "yarn add --exact otelstarter@0.1.2 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0"
 	if len(plan.Commands) != 1 || plan.Commands[0] != wantCmd {
 		t.Errorf("Commands = %q, want [%q]", plan.Commands, wantCmd)
 	}
