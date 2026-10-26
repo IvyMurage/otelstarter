@@ -31,7 +31,7 @@ echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc   # or ~/.bashrc
 
 Early development. Working commands:
 
-- `otelstarter analyze`: detect a project's language, framework and dependencies, and recommend OpenTelemetry instrumentation ([docs](docs/analyze.md)). Python and Node.js are analysed in full; Go is recognised but not analysed yet. `init`, `run` and `validate` support Python and Node.js (CommonJS).
+- `otelstarter analyze`: detect a project's language, framework and dependencies, and recommend OpenTelemetry instrumentation ([docs](docs/analyze.md)). Python and Node.js are analysed in full; Go is recognised but not analysed yet. `init`, `run` and `validate` support Python and Node.js (CommonJS and ES modules).
 - `otelstarter init`: add OpenTelemetry to a Python project ([docs](docs/init.md)).
 - `otelstarter run`: start a local Collector and Grafana, and optionally your app ([docs](docs/run.md)).
 - `otelstarter validate` and `otelstarter doctor`: check the setup and explain how to fix problems ([docs](docs/validate.md)).

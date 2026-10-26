@@ -80,7 +80,7 @@ opentelemetry-distro==0.66b0
 
 | Package manager | You run |
 |-----------------|---------|
-| npm | `npm install --save-exact otelstarter@0.1.2 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
+| npm | `npm install --save-exact otelstarter@0.1.3 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0` (an Express + pg app) |
 | yarn / pnpm / bun | the same packages with `yarn add --exact`, `pnpm add --save-exact` or `bun add --exact` |
 
 That is the `otelstarter` SDK, plus one instrumentation package per library the app uses. All of them are built on the same OpenTelemetry core version, so npm installs it once. An Express + pg app measured 46 MB of `node_modules` in total.
@@ -140,7 +140,7 @@ process.on('SIGTERM', () => server.close(() => process.exit(0)));
 
 ## Limitations
 
-- Python and Node.js for now (CommonJS apps; ES modules are next). Go projects get a clear error. A folder with both Python and Node.js is set up as Python.
+- Python and Node.js for now. ES-module Node.js apps need Node.js 22.14 or newer to be fully instrumented. Go projects get a clear error. A folder with both Python and Node.js is set up as Python.
 - **Start the app with `otel.env` loaded.** [`otelstarter run -- <command>`](run.md) does this for you. Without Docker, load it yourself: `set -a && . ./otel.env && set +a && opentelemetry-instrument <command>`. Without `otel.env`, the SDK looks for the gRPC exporter, which is not installed. The app keeps working, but OpenTelemetry prints `Configuration of configurator failed` and sends nothing.
 - `init` does not install packages or run your package manager. You run the printed command.
 - `init` adds missing packages but **does not change versions already pinned**. `otelstarter validate` warns when the `otelstarter` SDK pin is older than the current one.

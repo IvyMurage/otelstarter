@@ -12,6 +12,7 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { BatchSpanProcessor, type SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { listFromEnv } from './config';
+import { hookImports, moduleNames } from './esm';
 import { PrivacySpanProcessor } from './processor';
 
 /**
@@ -68,7 +69,10 @@ export function start(env: NodeJS.ProcessEnv = process.env): Started {
   const wanted = listFromEnv('OTEL_NODE_ENABLED_INSTRUMENTATIONS', env) ?? BASE_INSTRUMENTATIONS;
   const names = [...new Set([...BASE_INSTRUMENTATIONS, ...wanted])];
   const { loaded, missing } = loadInstrumentations(names);
-  registerInstrumentations({ instrumentations: loaded.map((l) => l.instance), tracerProvider, meterProvider, loggerProvider });
+  const instances = loaded.map((l) => l.instance);
+  // Before the app's first import, so modules loaded with import are patched too.
+  hookImports(moduleNames(instances), env);
+  registerInstrumentations({ instrumentations: instances, tracerProvider, meterProvider, loggerProvider });
 
   let stopped: Promise<void> | undefined;
   return {

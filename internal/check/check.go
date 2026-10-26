@@ -92,7 +92,7 @@ func Run(ctx context.Context, opts Options) []Result {
 	} else {
 		add(checkNodeModules(proj.Path, lang))
 		add(checkNodeAdvice(lang)...)
-		add(checkNode(ctx, proj.Path))
+		add(checkNode(ctx, proj.Path, lang.ESModule))
 	}
 	return results
 }

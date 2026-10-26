@@ -31,7 +31,7 @@ func TestCheckNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
 			useNode(t, tt.version)
-			if got := checkNode(context.Background(), t.TempDir()); got.Status != tt.want {
+			if got := checkNode(context.Background(), t.TempDir(), false); got.Status != tt.want {
 				t.Errorf("checkNode() = %v %q, want %v", got.Status, got.Title, tt.want)
 			}
 		})
@@ -40,8 +40,30 @@ func TestCheckNode(t *testing.T) {
 
 func TestCheckNodeMissing(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	if got := checkNode(context.Background(), t.TempDir()); got.Status != Warn {
+	if got := checkNode(context.Background(), t.TempDir(), false); got.Status != Warn {
 		t.Errorf("checkNode() = %v %q, want a warning", got.Status, got.Title)
+	}
+}
+
+func TestCheckNodeForESModuleApps(t *testing.T) {
+	tests := []struct {
+		version string
+		want    Status
+	}{
+		{"22.14.0", Pass},
+		{"24.1.0", Pass},
+		{"23.7.0", Pass},
+		{"22.13.1", Warn}, // runs, but without the import hook
+		{"20.19.0", Warn},
+		{"18.18.2", Fail}, // too old for OpenTelemetry at all
+	}
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			useNode(t, tt.version)
+			if got := checkNode(context.Background(), t.TempDir(), true); got.Status != tt.want {
+				t.Errorf("checkNode() = %v %q, want %v", got.Status, got.Title, tt.want)
+			}
+		})
 	}
 }
 

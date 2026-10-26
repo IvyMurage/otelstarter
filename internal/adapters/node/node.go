@@ -180,11 +180,7 @@ func Analyze(fsys fs.FS) (project.Language, error) {
 			"does not export console.log, so your logs will not reach the backend. Use pino or winston to send them, "+
 			"with trace IDs.")
 	}
-	if pkg.Type == "module" {
-		lang.Notes = append(lang.Notes, `This is an ES-module app ("type": "module"). otelstarter does not support `+
-			"ES modules yet: --require only instruments CommonJS, so frameworks and libraries loaded with import "+
-			"are not instrumented. Support is planned.")
-	}
+	lang.ESModule = pkg.Type == "module"
 	return lang, nil
 }
 
