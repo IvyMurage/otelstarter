@@ -1,6 +1,6 @@
 {
   "name": "otelstarter",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Lightweight OpenTelemetry for Node.js: zero-code tracing, metrics and structured logs, with redaction, query sanitising and business events.",
   "license": "Apache-2.0",
   "repository": { "type": "git", "url": "git+https://github.com/IvyMurage/otelstarter.git", "directory": "sdk/node" },
@@ -35,6 +35,7 @@
     "@opentelemetry/sdk-trace-base": "^2.12.0",
     "@opentelemetry/sdk-trace-node": "^2.12.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
+    "import-in-the-middle": "^3.0.0",
     "pino": "^9.0.0"
   },
   "devDependencies": {

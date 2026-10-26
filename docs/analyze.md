@@ -86,7 +86,6 @@ Node.js apps get the `otelstarter` SDK, plus one `@opentelemetry/instrumentation
 
 Notes explain the gaps:
 - **No logging library.** OpenTelemetry for Node does not export `console.log`; logs reach the backend only through pino, winston or bunyan.
-- **ES-module apps** (`"type": "module"`) are not supported yet.
 - **Fastify and Prisma** need their own instrumentation packages (`@fastify/otel`, `@prisma/instrumentation`).
 - **`@opentelemetry/auto-instrumentations-node`,** the 80 MB bundle earlier otelstarter versions installed. `analyze` suggests moving to the SDK.
 

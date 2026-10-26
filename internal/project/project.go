@@ -38,6 +38,11 @@ type Language struct {
 	// one package bundles many (Node.js), e.g. "express", "pg".
 	Enabled []string
 
+	// ESModule is true for a Node.js app that runs as ES modules
+	// ("type": "module" in package.json), which needs a newer Node.js to be
+	// fully instrumented.
+	ESModule bool
+
 	// DependenciesDetected is false when no adapter supports this language
 	// yet, so "found nothing" is never confused with "did not look".
 	DependenciesDetected bool

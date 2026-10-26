@@ -111,7 +111,6 @@ func TestAnalyzeNotes(t *testing.T) {
 		wantNote string
 	}{
 		{"no logging library", `{"dependencies": {"express": "^4"}}`, "does not export console.log"},
-		{"ES-module app", `{"type": "module", "dependencies": {"pino": "^9"}}`, "does not support ES modules yet"},
 		{"Fastify", `{"dependencies": {"fastify": "^5", "pino": "^9"}}`, "@fastify/otel"},
 		{"Prisma", `{"dependencies": {"@prisma/client": "^5", "pino": "^9"}}`, "@prisma/instrumentation"},
 		{"bundle from an earlier otelstarter", `{"dependencies": {"@opentelemetry/auto-instrumentations-node": "0.80.0", "pino": "^9"}}`,
@@ -124,6 +123,19 @@ func TestAnalyzeNotes(t *testing.T) {
 				t.Errorf("Notes = %q, want one containing %q", lang.Notes, tt.wantNote)
 			}
 		})
+	}
+}
+
+func TestAnalyzeESModuleApp(t *testing.T) {
+	lang := analyze(t, map[string]string{"package.json": `{"type": "module", "dependencies": {"express": "^4", "pino": "^9"}}`})
+	if !lang.ESModule {
+		t.Error("ESModule = false for \"type\": \"module\"")
+	}
+	if len(lang.Notes) != 0 {
+		t.Errorf("Notes = %q, want none: ES modules are supported", lang.Notes)
+	}
+	if analyze(t, map[string]string{"package.json": `{"dependencies": {"pino": "^9"}}`}).ESModule {
+		t.Error("ESModule = true without \"type\": \"module\"")
 	}
 }
 

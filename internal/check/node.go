@@ -12,10 +12,11 @@ import (
 )
 
 // checkNode reports whether the Node.js that will run the app is new enough
-// for the otelstarter SDK and OpenTelemetry (^18.19.0 || >=20.6.0). It
-// only runs "node --version", in the project folder so version managers
-// such as nvm or fnm that read .nvmrc there apply.
-func checkNode(ctx context.Context, dir string) Result {
+// for the otelstarter SDK and OpenTelemetry (^18.19.0 || >=20.6.0), and,
+// for an ES-module app, for the SDK's import hook (22.14+). It only runs
+// "node --version", in the project folder so version managers such as nvm
+// or fnm that read .nvmrc there apply.
+func checkNode(ctx context.Context, dir string, esModule bool) Result {
 	path, err := exec.LookPath("node")
 	if err != nil {
 		return warn("Node.js was not found on your PATH",
@@ -41,6 +42,15 @@ func checkNode(ctx context.Context, dir string) Result {
 		return fail(fmt.Sprintf("Node.js %s is too old for OpenTelemetry (%s)", version, path),
 			"OpenTelemetry for Node needs Node.js 18.19+ or 20.6+.",
 			"Install Node.js 20 or newer, for example with nvm: nvm install 20 && nvm use 20.")
+	}
+	// worker_threads.isInternalThread, which the SDK needs to run its import
+	// hook safely, arrived in 22.14 and 23.7.
+	hooksImports := major > 23 || (major == 23 && minor >= 7) || (major == 22 && minor >= 14)
+	if esModule && !hooksImports {
+		return warn(fmt.Sprintf("Node.js %s instruments only part of an ES-module app (%s)", version, path),
+			"The SDK instruments modules loaded with import from Node.js 22.14. On older versions, frameworks and "+
+				"libraries the app imports (Express, pg…) are not traced; incoming HTTP requests still are.",
+			"Install Node.js 22.14 or newer, for example with nvm: nvm install 22 && nvm use 22.")
 	}
 	return pass(fmt.Sprintf("Node.js %s (%s)", version, path))
 }

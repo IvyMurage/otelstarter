@@ -42,9 +42,15 @@ The package is 12.5 kB. With its dependencies and two instrumentations, an Expre
 
 Secrets are redacted in logs and spans, and SQL values are replaced with `?`. The exact rules, shared with the Python SDK, are in [docs/TELEMETRY_CONVENTIONS.md](../../docs/TELEMETRY_CONVENTIONS.md).
 
+## ES modules
+
+Apps that use `import` (`"type": "module"` in `package.json`, or `.mjs` files) work with the same `--require otelstarter/register`. The SDK then also turns on OpenTelemetry's import hook, limited to the libraries it instruments, such as express and pg.
+
+The hook costs about 200 ms of startup and 25 MB of memory, so it is only switched on when the script Node runs is an ES module. Override the check with `OTELSTARTER_ESM=true` or `OTELSTARTER_ESM=false`.
+
 ## Limitations
 
-- **CommonJS apps only.** ES-module support is planned.
+- **ES-module apps need Node.js 22.14 or newer** to have the libraries they `import` instrumented. On older versions, incoming HTTP requests are still traced.
 - **Spans are redacted only after instrumentation has created them.** Capturing request bodies or headers is up to the instrumentation's own settings.
 
 ## Development
