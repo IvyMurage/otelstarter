@@ -1,4 +1,6 @@
 import type { Context } from '@opentelemetry/api';
+import type { AnyValue } from '@opentelemetry/api-logs';
+import type { LogRecordProcessor, ReadWriteLogRecord } from '@opentelemetry/sdk-logs';
 import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { isSensitiveKey, redactUrl, REDACTED } from './redaction';
 import { sanitizeQuery } from './sanitize';
@@ -52,4 +54,55 @@ export function cleanAttributes(attributes: Record<string, unknown>): void {
       attributes[key] = redactUrl(value);
     }
   }
+}
+
+/**
+ * Redacts log records before the exporter sees them: sensitive attributes,
+ * at any depth, become [REDACTED]. It covers every log sent to OpenTelemetry,
+ * including those from the app's own pino, winston or bunyan logger, whose
+ * fields arrive as attributes:
+ *
+ *   log.info({ password: 'hunter2' }, 'login')  →  password: [REDACTED]
+ *
+ *   new PrivacyLogRecordProcessor(new BatchLogRecordProcessor({ exporter }))
+ */
+export class PrivacyLogRecordProcessor implements LogRecordProcessor {
+  constructor(private readonly next: LogRecordProcessor) {}
+
+  onEmit(record: ReadWriteLogRecord, context?: Context): void {
+    for (const [key, value] of Object.entries(record.attributes)) {
+      const cleaned = isSensitiveKey(key) ? REDACTED : cleanValue(value);
+      if (cleaned !== value) record.setAttribute(key, cleaned as AnyValue);
+    }
+    const body = cleanValue(record.body);
+    if (body !== record.body) record.setBody(body as AnyValue);
+    this.next.onEmit(record, context);
+  }
+
+  forceFlush(): Promise<void> {
+    return this.next.forceFlush();
+  }
+
+  shutdown(): Promise<void> {
+    return this.next.shutdown();
+  }
+}
+
+/**
+ * Returns value with sensitive keys redacted in nested objects and arrays,
+ * or value itself when nothing needed changing.
+ */
+function cleanValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const items = value.map(cleanValue);
+    return items.some((item, i) => item !== value[i]) ? items : value;
+  }
+  if (value === null || typeof value !== 'object' || value instanceof Uint8Array) return value;
+  let changed = false;
+  const copy: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    copy[key] = isSensitiveKey(key) ? REDACTED : cleanValue(item);
+    changed ||= copy[key] !== item;
+  }
+  return changed ? copy : value;
 }

@@ -10,7 +10,7 @@ import (
 )
 
 // SDKVersion is the otelstarter npm package version init pins.
-const SDKVersion = "0.1.3"
+const SDKVersion = "0.1.4"
 
 // pins are the tested versions init pins. All instrumentations use
 // @opentelemetry/instrumentation 0.223, the version the SDK is built on, so
@@ -49,7 +49,7 @@ func EnvVars(lang project.Language) []project.EnvVar {
 	}
 }
 
-// MissingPackages returns pinned packages, such as "otelstarter@0.1.3",
+// MissingPackages returns pinned packages, such as "otelstarter@0.1.4",
 // that the project does not have yet.
 func MissingPackages(lang project.Language) []string {
 	var pkgs []string

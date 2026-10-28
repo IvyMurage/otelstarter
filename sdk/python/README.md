@@ -59,6 +59,12 @@ They make a cleaned copy of each span and log record, then send it with the stan
 
 **FastAPI note.** Recent FastAPI versions (0.142 in testing) log *"FastAPI automatic telemetry configuration failed"* with these settings. It is harmless: it means FastAPI did not add a second exporter. With `otlp`, it would, and every span would be sent twice. To silence the message: `FastAPI(telemetry={"auto_configure": False})`.
 
+## Shutdown (0.3.1)
+
+Under `opentelemetry-instrument`, the SDK also changes how the app shuts down:
+- **SIGTERM:** if the app keeps Python's default SIGTERM, the telemetry still waiting is sent first, then the process stops exactly as it would have. Python's default otherwise drops it.
+- **At exit:** traces, logs and metrics are flushed at the same time, for at most 3 seconds in total. A Collector that is down cannot hold up a gunicorn or uvicorn worker for 20–30 seconds.
+
 ## Seeing events while you develop
 
 Set `OTELSTARTER_CONSOLE_EVENTS=true` and each event also prints one line to stderr. `otelstarter run -- <command>` sets this for you.

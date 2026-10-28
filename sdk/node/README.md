@@ -40,7 +40,11 @@ The package is 12.5 kB. With its dependencies and two instrumentations, an Expre
 
 ## Privacy
 
-Secrets are redacted in logs and spans, and SQL values are replaced with `?`. The exact rules, shared with the Python SDK, are in [docs/TELEMETRY_CONVENTIONS.md](../../docs/TELEMETRY_CONVENTIONS.md).
+Secrets are redacted in spans and in every log sent to OpenTelemetry, including logs from the app's own pino, winston or bunyan logger. SQL values are replaced with `?`. The exact rules, shared with the Python SDK, are in [docs/TELEMETRY_CONVENTIONS.md](../../docs/TELEMETRY_CONVENTIONS.md).
+
+## Shutdown
+
+On SIGTERM the SDK sends the telemetry still waiting, spending at most 3 seconds on it, then raises SIGTERM again. The app therefore stops exactly as it would without otelstarter, and a Collector that is down cannot hold it up. If the app has its own SIGTERM handler, that handler stays in charge.
 
 ## ES modules
 

@@ -17,7 +17,7 @@ const (
 
 	// otelstarterVersion is the domain-event SDK in sdk/python, published to
 	// PyPI. A test keeps it equal to sdk/python/src/otelstarter/__init__.py.
-	otelstarterVersion = "0.3.0"
+	otelstarterVersion = "0.3.1"
 )
 
 // Markers around the block otelstarter adds to requirements.txt. Removing

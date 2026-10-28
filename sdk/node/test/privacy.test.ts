@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import { trace } from '@opentelemetry/api';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import { PrivacySpanProcessor } from '../src/processor';
+import { InMemoryLogRecordExporter, LoggerProvider, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
+import { PrivacyLogRecordProcessor, PrivacySpanProcessor } from '../src/processor';
 import { isSensitiveKey, redactUrl } from '../src/redaction';
 import { querySummary, sanitizeQuery } from '../src/sanitize';
 
@@ -53,4 +54,25 @@ test('PrivacySpanProcessor cleans spans before they are exported', async () => {
   });
   await provider.shutdown();
   trace.disable();
+});
+
+test("PrivacyLogRecordProcessor redacts the app's own log fields before export", async () => {
+  const exporter = new InMemoryLogRecordExporter();
+  const provider = new LoggerProvider({
+    processors: [new PrivacyLogRecordProcessor(new SimpleLogRecordProcessor({ exporter }))],
+  });
+  // What the pino instrumentation emits for log.info({ password, user: { apiKey } }, 'login').
+  provider.getLogger('pino').emit({
+    body: 'login',
+    attributes: { password: 'hunter2', n: 1, user: { apiKey: 'k', name: 'ann' }, items: [{ token: 't' }] },
+  });
+  provider.getLogger('app').emit({ body: { msg: 'raw', secret: 's' } });
+  await provider.forceFlush();
+
+  const [login, raw] = exporter.getFinishedLogRecords();
+  assert.deepEqual(login.attributes, {
+    password: '[REDACTED]', n: 1, user: { apiKey: '[REDACTED]', name: 'ann' }, items: [{ token: '[REDACTED]' }],
+  });
+  assert.equal(login.body, 'login');
+  assert.deepEqual(raw.body, { msg: 'raw', secret: '[REDACTED]' });
 });

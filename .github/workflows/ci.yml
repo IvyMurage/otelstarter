@@ -85,3 +85,32 @@ jobs:
         run: npm ci
       - name: Test
         run: npm test
+
+  # Real apps (Express, NestJS, Flask, FastAPI, under gunicorn and uvicorn too)
+  # must answer exactly the same with otelstarter as without it, stop cleanly,
+  # and send telemetry without leaking secrets. See compat/README.md.
+  compat:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: pw
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run the apps with and without otelstarter
+        run: python compat/run.py
+        env:
+          DATABASE_URL: postgres://postgres:pw@127.0.0.1:5432/postgres
