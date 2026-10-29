@@ -67,9 +67,10 @@ go install ./cmd/otelstarter    # or: go build -o otelstarter ./cmd/otelstarter
 
 - [Quickstart](docs/quickstart.md): from an app to traces, logs, metrics and events
 - [Performance](docs/performance.md): what otelstarter and instrumentation cost
+- [Project guide](docs/PROJECT_GUIDE.md): the whole project in plain English, from how a request flows through it to what every file does
 - [Architecture](docs/ARCHITECTURE.md): system design and boundaries
 - [Requirements](docs/REQUIREMENTS.md): what the product must do
-- [Engineering guidelines](docs/ENGINEERING_GUIDELINES.md): rules for contributors and AI agents
+- [Engineering guidelines](docs/ENGINEERING_GUIDELINES.md): the rules every change follows
 - [Domain events](docs/DOMAIN_EVENTS.md): the business event model
 - [Architecture decision records](docs/adr/)
 - [Contributing](CONTRIBUTING.md)

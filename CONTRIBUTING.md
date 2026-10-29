@@ -1,6 +1,6 @@
 # Contributing to OTelStarter
 
-Read [docs/ENGINEERING_GUIDELINES.md](docs/ENGINEERING_GUIDELINES.md) first. It is mandatory for humans and AI agents.
+Read [docs/ENGINEERING_GUIDELINES.md](docs/ENGINEERING_GUIDELINES.md) first. Every change follows it.
 
 ## Development setup
 

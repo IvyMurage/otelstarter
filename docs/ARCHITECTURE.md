@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Version:** 1.0  
-**Audience:** Maintainers, contributors, AI coding agents, reviewers
+**Audience:** Maintainers, contributors and reviewers
 
 ## 1. Purpose
 
@@ -74,67 +74,67 @@ When two solutions are functionally equivalent, choose the simpler one. Complexi
 
 ## 3. High-Level Architecture
 
-```text
-                         ┌───────────────────────┐
-                         │      Developer        │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │     OTelStarter CLI   │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │   Project Analyzer    │
-                         │ Language              │
-                         │ Framework             │
-                         │ Dependencies          │
-                         │ Environment           │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │ Recommendation Engine │
-                         │ Instrumentation       │
-                         │ Configuration         │
-                         │ Safety                │
-                         │ Sampling              │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-              ┌─────────────────────────────────────────┐
-              │          Application Observability      │
-              │  Lightweight OTel instrumentation       │
-              │                                         │
-              │  ┌────────┐ ┌─────────┐ ┌──────────┐   │
-              │  │ Logs   │ │ Metrics │ │ Traces   │   │
-              │  └────┬───┘ └────┬────┘ └────┬─────┘   │
-              │       │           │           │         │
-              │       └───────────┼───────────┘         │
-              │                   │                     │
-              │            Domain Events                │
-              │                   │                     │
-              │          Business Context              │
-              │          Technical Context              │
-              └───────────────────┬─────────────────────┘
-                                  │
-                                  ▼
-                         ┌───────────────────────┐
-                         │ OpenTelemetry         │
-                         │ Collector             │
-                         └───────────┬───────────┘
-                                     │
-                    ┌────────────────┼────────────────┐
-                    │                │                │
-                    ▼                ▼                ▼
-                  Logs            Metrics          Traces
-                    │                │                │
-                    └────────────────┼────────────────┘
-                                     │
-                                     ▼
-                         Observability Backend
+### 3.1 The design
+
+Where OTelStarter is heading. Section 3.2 shows how much of it runs today.
+
+```mermaid
+flowchart TD
+    Dev([Developer]) --> CLI[OTelStarter CLI]
+    CLI --> Analyzer["<b>Project Analyzer</b><br/>Language<br/>Framework<br/>Dependencies<br/>Environment"]
+    Analyzer --> Engine["<b>Recommendation Engine</b><br/>Instrumentation<br/>Configuration<br/>Safety<br/>Sampling"]
+    Engine --> AppObs
+
+    subgraph AppObs["Application Observability: lightweight OTel instrumentation"]
+        direction TB
+        Traces[Traces] --> Events
+        Metrics[Metrics] --> Events
+        Logs[Logs] --> Events
+        Events["<b>Domain Events</b><br/>Business Context<br/>Technical Context"]
+    end
+
+    AppObs --> Collector[OpenTelemetry Collector]
+    Collector --> L2[Logs] & M2[Metrics] & T2[Traces]
+    L2 & M2 & T2 --> Backend[(Observability Backend)]
 ```
+
+### 3.2 As built today (CLI v0.1.0, Node.js SDK 0.1.4, Python SDK 0.3.1)
+
+```mermaid
+flowchart TD
+    Dev([Developer]) --> CLI
+
+    subgraph CLI["otelstarter CLI (Go)"]
+        direction LR
+        Analyze[analyze] ~~~ Init[init] ~~~ Run[run] ~~~ Validate["validate / doctor"]
+    end
+
+    CLI -->|"reads, never runs"| Manifests[/"package.json, requirements.txt,<br/>pyproject.toml, Pipfile"/]
+    CLI -->|"writes, after asking"| Env[/"otel.env and the install command"/]
+    Env --> App
+
+    subgraph App["The developer's app"]
+        direction TB
+        Libs["Instrumentations: only the libraries the app uses<br/>(express, pg, flask, psycopg2…)"] --> SDK
+        SDK["<b>otelstarter SDK</b> (npm or PyPI)<br/>redacts secrets, replaces SQL values with ?<br/>JSON logs with trace IDs, domain events<br/>flushes within 3 s on shutdown"]
+    end
+
+    App -->|"OTLP over HTTP, port 4318"| Collector["<b>OpenTelemetry Collector</b><br/>drops noise spans, batches"]
+    Collector --> LGTM
+
+    subgraph LGTM["grafana/otel-lgtm (local, started by run)"]
+        direction LR
+        Tempo[(Tempo<br/>traces)] ~~~ Loki[(Loki<br/>logs)] ~~~ Prom[(Prometheus<br/>metrics)]
+    end
+
+    LGTM --> Grafana[Grafana on localhost:3000]
+    App -.->|"in production: same otel.env,<br/>a different endpoint"| Other[(Any OTLP backend)]
+```
+
+Compared with the design in 3.1:
+- **Built:** the analyzer, recommendations, instrumentation, safety, domain events, the Collector and the local backend.
+- **Advice only, not automated:** sampling. `docs/performance.md` explains how to switch it on.
+- **Not started:** Go apps.
 
 ## 4. Architectural Layers
 
