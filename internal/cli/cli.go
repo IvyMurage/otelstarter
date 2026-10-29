@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"runtime/debug"
 	"strings"
 )
 
@@ -21,9 +22,11 @@ const (
 	exitUsage = 2
 )
 
-// Version is replaced at build time with:
+// Version is replaced at build time by the release workflow with:
 //
 //	go build -ldflags "-X github.com/IvyMurage/otelstarter/internal/cli.Version=v0.1.0"
+//
+// "go install ...@v0.1.0" does not set it; see version.
 var Version = "dev"
 
 // errUsage means the command line was wrong. The details have already been
@@ -143,6 +146,19 @@ func runVersion(fs *flag.FlagSet, args []string, s streams) error {
 	if _, err := parseArgs(fs, args, 0); err != nil {
 		return err
 	}
-	fmt.Fprintf(s.stdout, "otelstarter %s (%s, %s/%s)\n", Version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	fmt.Fprintf(s.stdout, "otelstarter %s (%s, %s/%s)\n", version(), runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	return nil
+}
+
+// version is Version when the build set it. Otherwise it is the module
+// version Go records in every binary built by "go install ...@v0.1.0", and
+// "dev" for a build from a checkout, where Go records "(devel)".
+func version() string {
+	if Version != "dev" {
+		return Version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return Version
 }

@@ -4,23 +4,22 @@ About 10 minutes, plus a one-time 1 GB download. At the end you can see your app
 
 ## You need
 
-- **Go 1.25+**, to install otelstarter.
 - **Docker** with Compose v2, for the local Collector and Grafana.
 - **Python 3.10 or newer** for your app. If `python3 --version` says 3.9 or older, install a newer one, for example with [pyenv](https://github.com/pyenv/pyenv): `pyenv install 3.12`, then `pyenv local 3.12` in your app's folder.
 
 ## 1. Install otelstarter
 
-```bash
-go install github.com/IvyMurage/otelstarter/cmd/otelstarter@latest
-```
-
-Go puts the program in `~/go/bin`. If your shell then says `otelstarter: command not found`, add that folder to your `PATH`:
+On Linux or macOS:
 
 ```bash
-echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc    # or ~/.bashrc
-source ~/.zshrc
+os=$(uname -s | tr '[:upper:]' '[:lower:]'); arch=$(uname -m)
+case "$arch" in x86_64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; esac
+curl -fsSL "https://github.com/IvyMurage/otelstarter/releases/latest/download/otelstarter_${os}_${arch}.tar.gz" | tar -xz otelstarter
+sudo mv otelstarter /usr/local/bin/
 otelstarter version
 ```
+
+Windows, or installing with Go instead: see [Install](../README.md#install) in the README.
 
 ## 2. An app to instrument
 

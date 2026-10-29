@@ -6,6 +6,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- Ready-made CLI downloads. Pushing a `v*` tag builds `otelstarter` for Linux, macOS and Windows (amd64 and arm64) and publishes them, with checksums, as a GitHub release. The README shows a one-line install.
+- `otelstarter version` reports the release version when installed with `go install …@vX.Y.Z`. Before, it printed `dev`.
 - `compat/run.py`, run in CI: real Express, NestJS 11 and 12, Flask and FastAPI apps, also under gunicorn and uvicorn with workers, must answer exactly the same with otelstarter as without it. They must also stop cleanly with the Collector up or down, send traces, logs and metrics, and leak no email address or password. See `compat/README.md`.
 - Release workflow for the Node.js SDK: pushing a `sdk-node-vX.Y.Z` tag tests and publishes it to npm through Trusted Publishing. The first version is published by hand; see `sdk/node/RELEASING.md`. Node.js SDK 0.1.1 is the first release through the workflow, with no code changes.
 - Python SDK 0.3.0: structured JSON logs (switched on automatically under `opentelemetry-instrument`), and `otelstarter` trace and log exporters that redact secrets and replace SQL values with `?` before export. `init` selects them in `otel.env` (`OTEL_TRACES_EXPORTER`/`OTEL_LOGS_EXPORTER=otelstarter`) and pins `otelstarter==0.3.0`. `validate` warns when an existing `otel.env` does not use them, and fails when it does but the SDK is missing or too old.
