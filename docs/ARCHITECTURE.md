@@ -74,66 +74,24 @@ When two solutions are functionally equivalent, choose the simpler one. Complexi
 
 ## 3. High-Level Architecture
 
-```text
-                         ┌───────────────────────┐
-                         │      Developer        │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │     OTelStarter CLI   │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │   Project Analyzer    │
-                         │ Language              │
-                         │ Framework             │
-                         │ Dependencies          │
-                         │ Environment           │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-                         ┌───────────────────────┐
-                         │ Recommendation Engine │
-                         │ Instrumentation       │
-                         │ Configuration         │
-                         │ Safety                │
-                         │ Sampling              │
-                         └───────────┬───────────┘
-                                     │
-                                     ▼
-              ┌─────────────────────────────────────────┐
-              │          Application Observability      │
-              │  Lightweight OTel instrumentation       │
-              │                                         │
-              │  ┌────────┐ ┌─────────┐ ┌──────────┐   │
-              │  │ Logs   │ │ Metrics │ │ Traces   │   │
-              │  └────┬───┘ └────┬────┘ └────┬─────┘   │
-              │       │           │           │         │
-              │       └───────────┼───────────┘         │
-              │                   │                     │
-              │            Domain Events                │
-              │                   │                     │
-              │          Business Context              │
-              │          Technical Context              │
-              └───────────────────┬─────────────────────┘
-                                  │
-                                  ▼
-                         ┌───────────────────────┐
-                         │ OpenTelemetry         │
-                         │ Collector             │
-                         └───────────┬───────────┘
-                                     │
-                    ┌────────────────┼────────────────┐
-                    │                │                │
-                    ▼                ▼                ▼
-                  Logs            Metrics          Traces
-                    │                │                │
-                    └────────────────┼────────────────┘
-                                     │
-                                     ▼
-                         Observability Backend
+```mermaid
+flowchart TD
+    Dev([Developer]) --> CLI[OTelStarter CLI]
+    CLI --> Analyzer["<b>Project Analyzer</b><br/>Language<br/>Framework<br/>Dependencies<br/>Environment"]
+    Analyzer --> Engine["<b>Recommendation Engine</b><br/>Instrumentation<br/>Configuration<br/>Safety<br/>Sampling"]
+    Engine --> AppObs
+
+    subgraph AppObs["Application Observability: lightweight OTel instrumentation"]
+        direction TB
+        Traces[Traces] --> Events
+        Metrics[Metrics] --> Events
+        Logs[Logs] --> Events
+        Events["<b>Domain Events</b><br/>Business Context<br/>Technical Context"]
+    end
+
+    AppObs --> Collector[OpenTelemetry Collector]
+    Collector --> L2[Logs] & M2[Metrics] & T2[Traces]
+    L2 & M2 & T2 --> Backend[(Observability Backend)]
 ```
 
 ## 4. Architectural Layers
