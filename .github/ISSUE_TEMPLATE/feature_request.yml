@@ -1,0 +1,25 @@
+name: Feature or library request
+description: Support for a library, framework or language, or a new feature.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you need?
+      description: The problem first, then the idea. For a library, name it and how your app uses it.
+      placeholder: My app uses bullmq for background jobs, and the jobs do not show up in traces.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to build it?
+      description: docs/adding-a-language.md shows how. Adding a library is usually a small change.
+      options:
+        - Yes, with some guidance
+        - Maybe
+        - No, just suggesting it

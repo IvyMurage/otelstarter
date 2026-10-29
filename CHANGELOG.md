@@ -7,6 +7,13 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Added
 
 - `docs/PROJECT_GUIDE.md`: the whole project in plain English, including what every file does.
+- For contributors:
+  - a rewritten `CONTRIBUTING.md`, with setup and checks for each part and what happens after a pull request;
+  - `docs/adding-a-language.md`;
+  - pull request and issue templates;
+  - `CODE_OF_CONDUCT.md`.
+
+  The engineering guidelines now speak to every contributor, with a section on using AI assistants.
 
 ## [0.1.0] - 2026-10-29
 

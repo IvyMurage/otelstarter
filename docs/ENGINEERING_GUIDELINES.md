@@ -1,526 +1,332 @@
-# OTelStarter Engineering & AI Agent Guidelines
+# How we build OTelStarter
 
-**Status:** Mandatory  
-**Audience:** AI coding agents, maintainers, contributors, reviewers
+**Status:** These guidelines apply to every change, whoever or whatever writes it.
+**For:** contributors, reviewers, and me, the maintainer.
 
-## 1. Purpose
+## 1. Why this page exists
 
-This document defines how OTelStarter should be designed, implemented, reviewed, and maintained.
+I started OTelStarter because adding observability to an app should take minutes, not a week of reading OpenTelemetry docs. The tool only keeps that promise if its own code stays easy to understand and safe to change. This page is how we keep it that way.
 
-The goal is to ensure:
-- A beginner can understand the codebase.
-- A senior engineer can extend it confidently.
-- Open-source contributors can contribute without understanding the entire system.
-- AI agents can modify the code safely.
-- The system remains simple as it grows.
+What I want for the codebase:
+- Someone new to Go, Node.js or Python can read it and follow what it does.
+- An experienced engineer can extend it with confidence.
+- You can make a useful contribution without understanding the whole system.
+- It stays simple as it grows.
 
-## 2. AI Agent Role
+The users of OTelStarter are developers who trust it with their apps. Contributors deserve the same care: a clear path, quick answers, and no surprises.
 
-When working on this repository, the AI agent MUST behave like a senior software engineer with 10+ years of production engineering experience.
+## 2. Using AI coding tools
 
-This means:
-- Understand before modifying.
-- Challenge unnecessary complexity.
-- Prefer simple solutions.
-- Consider security and reliability.
-- Reuse existing code.
-- Write tests.
-- Protect backwards compatibility.
-- Consider maintainability.
-- Explain important architectural decisions.
+You are welcome to use AI assistants such as Copilot or Claude. Everything on this page applies to the code they produce, exactly as if you had typed it, and you are responsible for it. In practice:
+- Read every line before you open the pull request. Remove what is not needed.
+- Run the checks yourself (section 33). Never write "tests pass" for tests that did not run.
+- Keep the change focused (section 31). Assistants like to tidy unrelated code; leave it out.
+- If an assistant suggests something complicated, ask whether a simpler version would do (section 4).
 
-The AI agent must NOT blindly implement instructions that introduce obvious technical debt.
+## 3. Before you change code
 
-## 3. Before Coding
+1. Read the [README](../README.md), the [project guide](PROJECT_GUIDE.md) and, for anything structural, the [architecture](ARCHITECTURE.md) and [requirements](REQUIREMENTS.md).
+2. Look at the code you are about to change, and its tests.
+3. Search for existing functions that already do part of the job.
+4. Follow the patterns already in use, even where you would have chosen differently.
+5. Find the smallest change that solves the problem.
 
-Before changing code, the AI agent MUST:
-1. Read README.md.
-2. Read docs/ARCHITECTURE.md.
-3. Read docs/REQUIREMENTS.md.
-4. Read this document.
-5. Inspect relevant source code.
-6. Search for existing functionality.
-7. Inspect related tests.
-8. Understand existing patterns.
-9. Identify the smallest appropriate change.
+Please do not start by creating new abstractions.
 
-Do not immediately create new abstractions.
+## 4. Keep it simple
 
-## 4. KISS
-
-Always prefer the simplest correct solution.
-
-Ask:
+Prefer the simplest correct solution. Before adding a framework, a dependency, an abstraction, a service, a configuration layer or an extension point, ask:
 
 > Can this be simpler?
 
-before introducing a new framework, dependency, abstraction, service, configuration layer, or extension point.
+## 5. Build what is needed now
 
-## 5. YAGNI
+Do not build something because it might be useful one day. No unused settings, no future-proof abstractions, no extension points nobody uses yet.
 
-Do not build functionality merely because it might be useful someday.
+## 6. Avoid duplication, but not at any price
 
-Avoid unused configuration, future-proof abstractions, and unused extension points.
+Remove duplication when it is real. But three simple copies are often better than one clever abstraction that is hard to follow.
 
-Build what is required now.
+## 7. One job per function
 
-## 6. DRY — But Carefully
+Each function should have one clear job. A function that detects the project, installs packages, writes configuration and starts Docker is four functions.
 
-Avoid unnecessary duplication.
-
-However, do not create complicated abstractions merely to remove a few duplicated lines.
-
-Three simple implementations can be preferable to one difficult abstraction.
-
-## 7. Single Responsibility
-
-Functions and classes should have clear responsibilities.
-
-Avoid giant functions that perform detection, installation, configuration, validation, Docker startup, and telemetry.
-
-Prefer focused functions such as:
+Our own code shows the shape:
 ```text
-detect_project()
-detect_dependencies()
-generate_config()
-validate_config()
-start_environment()
+detect.Detect()          finds the languages
+setup.BuildPlan()        works out the changes, writing nothing
+setup.Apply()            writes them
+check.Run()              runs the checks
+localstack.Stack.Start() starts Docker
 ```
 
-## 8. Naming
+## 8. Names
 
-Names must communicate intent.
+A name should say what the thing does: `BuildPlan`, `sanitizeQuery`, `redact_url`, `checkPrivacyExporters`.
 
-Prefer:
-```text
-detect_framework()
-generate_collector_config()
-validate_configuration()
-redact_sensitive_fields()
-emit_domain_event()
-```
+Avoid names that say nothing, such as `process`, `handle`, `manager`, `helper`, `data` or `utils`, unless the context makes them clear.
 
-Avoid vague names:
-```text
-process()
-handle()
-run()
-manager()
-helper()
-data()
-thing()
-utils()
-```
-
-unless genuinely clear in context.
+Follow each language's conventions: `MixedCaps` in Go, `camelCase` in TypeScript, `snake_case` in Python.
 
 ## 9. Functions
 
 Functions should:
-- Do one thing.
-- Have clear inputs.
-- Have clear outputs.
-- Avoid unnecessary side effects.
-- Be easy to test.
+- do one thing;
+- take clear inputs and return clear outputs;
+- avoid side effects nobody would expect;
+- be easy to test.
 
-## 10. Classes
+## 10. Classes and types
 
-Do not create a class when a function or simple data structure is sufficient.
+Do not create a class when a function or a plain data structure is enough. A class or type should stand for something real: a concept in the domain, a component with state, or a clear boundary. Never a bag of unrelated helpers.
 
-Classes should represent:
-- A meaningful domain concept.
-- A stateful component.
-- A clear abstraction boundary.
+## 11. Reuse before you write
 
-Avoid classes used only to group unrelated utilities.
+Before writing something new, search the code and the tests for something that already does it. Do not duplicate behaviour that exists. But do not force unrelated things together just to share code either.
 
-## 11. Reusability
+## 12. When to add an abstraction
 
-Before implementing something new:
-1. Search existing code.
-2. Search related modules.
-3. Search tests.
-4. Identify reusable functions.
+Add one when:
+- several implementations really share behaviour;
+- it makes the code clearer;
+- it stands for a real concept;
+- it is likely to stay stable.
 
-Do not duplicate existing behavior.
+Never only because it might be needed later.
 
-But do not force unrelated components into one abstraction.
+## 13. Dependencies
 
-## 12. Abstraction Rule
+Every dependency is code we did not write but must trust, update and ship. Before adding one, ask:
+- Can the standard library do this?
+- Can a dependency we already have do it?
+- Is it maintained?
+- Does it add security risk?
+- Does it remove more complexity than it adds?
 
-Create an abstraction when:
-- Multiple implementations genuinely share behavior.
-- The abstraction improves clarity.
-- The abstraction represents a real concept.
-- The abstraction is likely to remain stable.
-
-Do not abstract solely because it may be needed later.
-
-## 13. Dependency Management
-
-Every dependency has a cost.
-
-Before adding one, ask:
-- Can the standard library solve this?
-- Can an existing dependency solve this?
-- Is it actively maintained?
-- Does it introduce security risk?
-- Does it materially reduce complexity?
-
-Prefer fewer dependencies.
+The CLI has a single dependency today. Please keep it that way unless there is a strong reason.
 
 ## 14. Configuration
 
-Configuration should be explicit and predictable.
+Configuration should be explicit and predictable. Do not hard-code values that differ between environments, and do not make everything configurable either.
 
-Do not hardcode environment-specific values.
+## 15. Error messages
 
-But do not make everything configurable.
-
-## 15. Error Handling
-
-Every user-facing error should answer:
+Every error a user sees answers three questions:
 1. What happened?
 2. Why?
-3. How can I fix it?
+3. How do I fix it?
 
-## 16. Logging
+`otelstarter validate` is the model: each problem has a **Why** and a **Fix**.
 
-OTelStarter's own logs must be useful and non-sensitive.
+## 16. OTelStarter's own logs
 
-Never log:
-- Passwords
-- Tokens
-- Secrets
-- API keys
-- Private keys
-- Full credentials
+Our own output must be useful and must never contain passwords, tokens, secrets, API keys, private keys or credentials.
 
 ## 17. Security
 
-Security is part of design.
+Security is part of the design, not a later step. Think about:
+- secrets and input validation;
+- path traversal, command injection and unsafe file changes;
+- dependency vulnerabilities;
+- sensitive data in telemetry.
 
-Consider:
-- Authentication
-- Authorization
-- Secrets
-- Input validation
-- Dependency vulnerabilities
-- Path traversal
-- Command injection
-- Unsafe file modification
-- Sensitive telemetry
+Anything that runs a command or changes a file needs a deliberate security review. That is why the CLI never runs a project's code, calls Docker without a shell, and writes files only through `os.Root`.
 
-CLI functionality that executes commands or modifies files requires explicit security consideration.
+Report security problems privately, as described in [SECURITY.md](../SECURITY.md).
 
 ## 18. Privacy
 
-Collect the minimum information required.
+Collect the minimum. Record `payment.completed`, not the payment. Business context means business meaning, never business payloads.
 
-Prefer:
+## 19. Telemetry cardinality
+
+Never turn values with many possible settings into metric labels automatically: `user_id`, `request_id`, `transaction_id`, email, phone. Each distinct value becomes a separate series, and the backend's cost explodes.
+
+## 20. Domain event names
+
+Use `<domain>.<action>`, describing what happened in the business, not which function ran:
+
 ```text
-payment.completed
+payment.completed   payment.failed   order.created   order.cancelled
+loan.submitted      loan.approved    user.authenticated
 ```
 
-over customer payloads.
+## 21. Business context
 
-Business context means business meaning, not business payloads.
+Add business metadata sparingly, for example `domain = payments`, `operation = payment`, `outcome = success`. The aim is the most diagnostic value from the least data.
 
-## 19. Telemetry Cardinality
+## 22. Technical context
 
-Avoid high-cardinality metric attributes.
+Developers should never have to add these by hand. Attach them automatically wherever possible:
+- `service.name`, `service.version` and the environment;
+- `trace_id` and `span_id`;
+- the HTTP route and status;
+- the runtime and the deployment.
 
-Do not automatically use:
-- user_id
-- request_id
-- transaction_id
-- email
-- phone
+## 23. OpenTelemetry first
 
-as metric labels.
+When OpenTelemetry already does something (logs, metrics, traces, context propagation, resources, export), use it. OTelStarter is an opinionated experience around OpenTelemetry, not a replacement for it.
 
-## 20. Domain Event Naming
+## 24. No lock-in to a backend
 
-Use:
-```text
-<domain>.<action>
-```
-
-Examples:
-```text
-payment.completed
-payment.failed
-order.created
-order.cancelled
-loan.submitted
-loan.approved
-user.authenticated
-```
-
-Event names describe what happened, not what code function executed.
-
-## 21. Business Context
-
-Use business metadata sparingly.
-
-Good:
-```text
-domain = payments
-operation = payment
-outcome = success
-```
-
-Avoid unnecessary payloads.
-
-Goal:
-
-> High diagnostic value with minimal data.
-
-## 22. Technical Context
-
-Automatically attach where possible:
-- service.name
-- service.version
-- environment
-- trace_id
-- span_id
-- HTTP route
-- HTTP status
-- runtime
-- deployment
-
-Developers should not manually add these everywhere.
-
-## 23. OpenTelemetry First
-
-Do not create proprietary telemetry mechanisms when OpenTelemetry provides the capability.
-
-Use OpenTelemetry for:
-- Logs
-- Metrics
-- Traces
-- Context propagation
-- Resource attributes
-- Export
-
-OTelStarter is an opinionated developer experience around OpenTelemetry, not a replacement.
-
-## 24. Backend Agnostic
-
-Do not couple the SDK to:
-- Grafana
-- Loki
-- Tempo
-- Prometheus
-- OpenObserve
-
-These are backend choices.
+The SDKs must work with any OTLP backend. Grafana, Tempo, Loki, Prometheus and OpenObserve are choices the user makes, not ones we make for them. The local Grafana stack is a development convenience only.
 
 ## 25. Tests
 
-Every meaningful feature requires tests.
+Every meaningful change comes with tests. Depending on the change, that means:
+- unit tests;
+- tests of the CLI's output and exit codes;
+- configuration tests;
+- safety tests;
+- adapter tests for each language;
+- the compatibility check in `compat/`.
 
-Minimum:
-- Unit tests
-- Integration tests
-- CLI tests
-- Configuration tests
-- Safety tests
-- Language adapter tests
+Test behaviour, not internals.
 
-Test behavior rather than internal implementation.
+## 26. Mostly fast tests
 
-## 26. Test Pyramid
+Most tests should be fast unit tests, fewer should be integration tests, and only a few should be end-to-end:
 
-Prefer:
 ```text
-        E2E
-       /   \
-  Integration
-     /     \
-    Unit tests
+        end-to-end (compat/)
+       /                    \
+     integration (real processes, Docker)
+    /                                    \
+   unit tests
 ```
 
-Most tests should be fast unit tests.
+## 27. Backwards compatibility
 
-## 27. Backwards Compatibility
+What OTelStarter generates (`otel.env`, the install commands) and the commands themselves are a public interface: real projects depend on them. Before changing them, think about existing projects and users.
 
-Treat generated configuration as a public interface.
-
-Before changing generated output, consider existing projects, configurations, CLI commands, dashboards, and users.
-
-Breaking changes require explicit documentation.
+Document a breaking change in `CHANGELOG.md`, and give users a way through. When the Node.js setup moved away from the 80 MB bundle, `run` kept using the old loader and `validate` warned instead of failing.
 
 ## 28. Documentation
 
-Every public feature should explain:
-- What
-- Why
-- How
-- Example
-- Limitations
+Every public feature explains:
+- what it does and why;
+- how to use it, with an example;
+- its limitations.
 
 If something cannot be explained simply, reconsider the design.
 
-## 29. Code Comments
+## 29. Comments
 
-Comments should explain **why**, not what.
+Comments explain **why**, not **what**. A comment that repeats the code is noise.
 
-Avoid comments that merely repeat the code.
+## 30. Where code lives
 
-## 30. File and Module Organization
-
-Prefer:
-```text
-src/
-├── cli/
-├── core/
-├── adapters/
-├── telemetry/
-├── safety/
-└── configuration/
-```
-
-Avoid giant files and dumping unrelated functionality into `utils.py`, `helpers.py`, or `common.py`.
-
-## 31. AI Agent Change Discipline
-
-The AI agent should make focused changes.
-
-Do not combine a new feature with unrelated refactoring, formatting, or dependency upgrades unless required.
-
-A pull request should have one clear purpose.
-
-## 32. AI Agent Must Review Its Own Diff
-
-Before completing work, review:
-- Changed files
-- Added files
-- Deleted files
-- Dependencies
-- Tests
-- Documentation
-- Security implications
-- Telemetry implications
-
-Remove unnecessary changes.
-
-## 33. AI Agent Must Run Verification
-
-Before declaring a task complete:
-- Run tests.
-- Run lint.
-- Run type checking where applicable.
-- Validate generated configuration.
-- Run relevant integration tests.
-
-If something cannot be run, state why.
-
-Never claim tests passed if they were not run.
-
-## 34. AI Agent Must Challenge Bad Designs
-
-If a requested implementation introduces unnecessary complexity, explain the concern and recommend a simpler approach.
-
-The goal is good engineering, not blind compliance.
-
-## 35. Open Source Standards
-
-A contributor should be able to understand:
-- How to run the project.
-- How the architecture works.
-- Where language adapters live.
-- Where tests live.
-- How to add instrumentation.
-- How to submit a PR.
-
-## 36. Adding a Language
-
-A language adapter should be isolated:
+Put new code where its job belongs. Do not create a `utils`, `helpers` or `common` file:
 
 ```text
-adapters/
-└── python/
-    ├── detector
-    ├── instrumentation
-    ├── configuration
-    ├── validator
-    └── tests
+cmd/otelstarter/        the program's entry point, one line
+internal/cli/           commands: parse flags, call packages, print results
+internal/detect/        which language a project is
+internal/adapters/      one folder per language: python/, node/
+internal/setup/         the only code that writes to a user's project
+internal/check/         the checks behind validate and doctor (read-only)
+internal/localstack/    the local Collector and Grafana
+sdk/node/, sdk/python/  the SDKs that run inside users' apps
+compat/                 real apps, run with and without otelstarter
 ```
 
-A contributor should not need to modify unrelated parts of the system.
+The [project guide](PROJECT_GUIDE.md) describes every file.
 
-Document the process in:
+## 31. Focused changes
+
+A pull request should have one clear purpose. Do not mix a feature with unrelated refactoring, formatting or dependency upgrades. Send those separately; they are welcome.
+
+## 32. Review your own diff
+
+Before asking for a review, read your own diff: the files changed, added and deleted, the dependencies, the tests, the docs, and anything that touches security or telemetry. Remove what is not needed.
+
+## 33. Run the checks
+
+Before saying a change is done:
+- run the tests;
+- run the linters and type checks;
+- check any configuration you generate;
+- run the relevant integration tests, or the compatibility check in `compat/`.
+
+[CONTRIBUTING.md](../CONTRIBUTING.md) lists the commands for each part. If you could not run something, say what and why. Never claim a check passed if it did not run.
+
+## 34. Push back on bad designs
+
+If an issue, a reviewer, or I ask for something needlessly complicated, say so and suggest a simpler way. I want good engineering, not agreement.
+
+## 35. What a contributor should find easily
+
+Without asking anyone, a contributor should be able to find out:
+- how to set up and run the project ([CONTRIBUTING.md](../CONTRIBUTING.md));
+- how it fits together ([project guide](PROJECT_GUIDE.md), [architecture](ARCHITECTURE.md));
+- where the language adapters and the tests live (section 30);
+- how to add support for a library or a language ([adding a library or a language](adding-a-language.md));
+- how to open a pull request, and what happens next ([CONTRIBUTING.md](../CONTRIBUTING.md)).
+
+If any of this is hard to find, that is a bug. Please report it.
+
+## 36. Adding a language
+
+A language adapter is self-contained:
+
 ```text
-docs/adding-a-language.md
+internal/adapters/<language>/
+├── <language>.go     reads the manifests, detects frameworks and libraries
+├── instrumentation   recommends packages (a file or a section)
+├── setup.go          what init writes, pinned versions, how run starts the app
+└── *_test.go
 ```
 
-## 37. Pull Requests
+Adding one should not mean changing unrelated parts of the system. [Adding a library or a language](adding-a-language.md) walks through it.
 
-Every PR should answer:
+## 37. Pull requests
+
+The pull request template asks these questions. Answer the ones that apply; a sentence each is enough:
 - What problem does this solve?
-- Why is this implementation appropriate?
-- What alternatives were considered?
-- What tests were added?
-- Does it introduce dependencies?
-- Does it affect performance?
-- Does it affect security?
-- Does it affect telemetry volume?
-- Does it introduce a breaking change?
+- Why this way? Which alternatives did you consider?
+- What tests did you add or run?
+- Does it add a dependency?
+- Does it affect performance, security, or how much telemetry users send?
+- Does it break anything for existing users?
 
-## 38. Architecture Decision Records
+## 38. Decisions
 
-Significant decisions should use ADRs.
+Write significant decisions down as an ADR in [`docs/adr/`](adr/): context, decision, alternatives, consequences. The ten existing ones show the format.
 
-Location:
-```text
-docs/adr/
-```
+## 39. When a change is done
 
-Each ADR contains:
-- Context
-- Decision
-- Alternatives
-- Consequences
+A change is done when:
+- it works, and has tests;
+- its documentation is updated;
+- security, privacy and performance have been considered;
+- its errors explain themselves;
+- existing behaviour still works;
+- the code is easy to read, and the diff is focused.
 
-## 39. Definition of Done
+## 40. The short version
 
-A feature is not complete until:
-- Implementation exists.
-- Tests exist.
-- Relevant documentation exists.
-- Security reviewed.
-- Privacy considered.
-- Performance considered.
-- Error handling exists.
-- Existing behavior preserved.
-- Code is understandable.
-- Diff is focused.
-
-## 40. Golden Rules
-
-1. Understand before changing.
+1. Understand before you change.
 2. Prefer simple solutions.
-3. Reuse before creating.
-4. Do not abstract prematurely.
+3. Reuse before you create.
+4. Do not abstract early.
 5. Keep functions focused.
 6. Name things clearly.
-7. Treat security as a requirement.
-8. Treat privacy as a requirement.
-9. Collect useful telemetry, not maximum telemetry.
+7. Security is a requirement.
+8. Privacy is a requirement.
+9. Collect useful telemetry, not all of it.
 10. Business context is not business payload.
-11. OpenTelemetry is the foundation; do not reinvent it.
-12. Do not couple the SDK to a backend.
-13. Write tests for behavior.
-14. Document public behavior.
+11. Build on OpenTelemetry; do not reinvent it.
+12. Do not tie the SDKs to a backend.
+13. Test behaviour.
+14. Document what users see.
 15. Keep pull requests focused.
-16. Challenge unnecessary complexity.
-17. Never claim verification that was not performed.
+16. Push back on unnecessary complexity.
+17. Never claim a check you did not run.
 
-## 41. Final Engineering Principle
+## 41. In one sentence
 
-> **Simple enough for a beginner to understand. Structured enough for a senior engineer to extend. Documented enough for an open-source contributor to participate. Explicit enough for an AI agent to modify safely.**
+> **Simple enough for a beginner to understand, structured enough for a senior engineer to extend, documented enough for anyone to contribute, and explicit enough that any change, by a person or with an AI assistant, can be made safely.**
 
-Product principle:
+And for the product:
 
-> **Automatically collect technical context, explicitly capture meaningful business context, correlate logs/metrics/traces/domain events, and collect only the telemetry that provides operational value.**
+> **Collect technical context automatically, capture business context deliberately, connect logs, metrics, traces and domain events, and send only the telemetry that is worth having.**

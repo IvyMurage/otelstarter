@@ -1,0 +1,34 @@
+name: Bug report
+description: Something does not work as the docs say it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting it. Found a security problem? Please report it privately instead; see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you run, what did you expect, and what happened instead? Paste the exact error.
+      placeholder: |
+        I ran `otelstarter run -- npm start` and expected traces in Grafana, but…
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `otelstarter doctor`
+      description: Run it in your project's folder. It hides secrets, so it is safe to paste.
+      render: text
+  - type: input
+    id: app
+    attributes:
+      label: Your app
+      description: Language, framework and how you start it.
+      placeholder: Express 5 on Node.js 22, started with npm start
+  - type: input
+    id: versions
+    attributes:
+      label: SDK version, if it is about the SDK
+      placeholder: npm otelstarter 0.1.4 / PyPI otelstarter 0.3.1

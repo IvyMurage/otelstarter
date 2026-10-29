@@ -73,7 +73,8 @@ go install ./cmd/otelstarter    # or: go build -o otelstarter ./cmd/otelstarter
 - [Engineering guidelines](docs/ENGINEERING_GUIDELINES.md): the rules every change follows
 - [Domain events](docs/DOMAIN_EVENTS.md): the business event model
 - [Architecture decision records](docs/adr/)
-- [Contributing](CONTRIBUTING.md)
+- [Contributing](CONTRIBUTING.md): from a fresh clone to a merged pull request
+- [Adding a library or a language](docs/adding-a-language.md)
 
 ## License
 
