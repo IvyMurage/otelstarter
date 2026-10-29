@@ -53,6 +53,29 @@ New packages are added when a feature needs them, not ahead of time. The planned
 
 Tests live next to the code they test, in `*_test.go` files. That is the Go convention. Test behaviour (exit codes, output) rather than internals.
 
+## Releasing the CLI
+
+Pushing a tag like `v0.2.0` runs `.github/workflows/release-cli.yml`:
+1. it tests the CLI;
+2. it builds it for Linux, macOS and Windows (amd64 and arm64) with `.github/scripts/build-cli.sh`;
+3. it publishes a GitHub release with the archives, `checksums.txt` and notes generated from the merged pull requests.
+
+A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release.
+
+Before tagging:
+1. In `CHANGELOG.md`, rename `[Unreleased]` to the version and date, and start a new empty `[Unreleased]` above it. Merge that.
+2. Then tag the merged commit:
+
+```bash
+git switch main && git pull
+git log --oneline -1          # check it is the commit you mean
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+To try the build locally: `.github/scripts/build-cli.sh v0.0.0-test dist`.
+
+The SDKs have their own release tags and workflows: `sdk/node/RELEASING.md` and `sdk/python/RELEASING.md`.
+
 ## Pull requests
 
 Keep each PR to one purpose. Answer the questions in section 37 of the engineering guidelines in the PR description.

@@ -13,13 +13,29 @@ otelstarter run -- uvicorn main:app   # start a local Collector + Grafana, then 
 
 ## Install
 
-Requires Go 1.25 or newer.
+**Linux and macOS:** download the latest release and put it on your `PATH`:
+
+```bash
+os=$(uname -s | tr '[:upper:]' '[:lower:]'); arch=$(uname -m)
+case "$arch" in x86_64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; esac
+curl -fsSL "https://github.com/IvyMurage/otelstarter/releases/latest/download/otelstarter_${os}_${arch}.tar.gz" | tar -xz otelstarter
+sudo mv otelstarter /usr/local/bin/
+otelstarter version
+```
+
+**Windows:** download `otelstarter_windows_amd64.zip` (or `_arm64`) from the [latest release](https://github.com/IvyMurage/otelstarter/releases/latest), unzip it, and put `otelstarter.exe` in a folder on your `PATH`.
+
+Each release lists SHA-256 checksums in `checksums.txt`. The binaries are not code-signed yet:
+- **macOS:** a file downloaded with a browser (not `curl`) is blocked the first time. Allow it with `xattr -d com.apple.quarantine otelstarter`.
+- **Windows:** SmartScreen may ask you to confirm.
+
+**With Go 1.25 or newer:**
 
 ```bash
 go install github.com/IvyMurage/otelstarter/cmd/otelstarter@latest
 ```
 
-The program lands in `~/go/bin`. If `otelstarter` is then "command not found", add that folder to your `PATH`:
+Go puts the program in `~/go/bin`. If `otelstarter` is then "command not found", add that folder to your `PATH`:
 
 ```bash
 echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc   # or ~/.bashrc
