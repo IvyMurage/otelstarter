@@ -4,6 +4,10 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-29
+
+The first release of the CLI. The SDKs are released separately: npm `otelstarter` 0.1.4 and PyPI `otelstarter` 0.3.1.
+
 ### Added
 
 - Ready-made CLI downloads. Pushing a `v*` tag builds `otelstarter` for Linux, macOS and Windows (amd64 and arm64) and publishes them, with checksums, as a GitHub release. The README shows a one-line install.
