@@ -2,6 +2,8 @@
 
 Start here when working on the repository.
 
+For an overview of the whole project, every file included, read `docs/PROJECT_GUIDE.md` first.
+
 1. `docs/ARCHITECTURE.md` — system architecture and boundaries.
 2. `docs/REQUIREMENTS.md` — product and technical requirements.
 3. `docs/ENGINEERING_GUIDELINES.md` — mandatory rules for humans and AI agents.
