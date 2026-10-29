@@ -1,70 +1,99 @@
 # Contributing to OTelStarter
 
-Read [docs/ENGINEERING_GUIDELINES.md](docs/ENGINEERING_GUIDELINES.md) first. Every change follows it.
+Thank you for considering it. Every kind of help counts:
+- a bug report with `otelstarter doctor` output;
+- a fix to a confusing sentence in the docs;
+- support for a library you use;
+- a whole new language.
 
-## Development setup
+You do not need to understand the whole project to help. This page gets you from a fresh clone to a merged pull request.
 
-Install Go 1.25 or newer from <https://go.dev/dl/>.
+## What kind of change?
+
+| You want to… | Start here |
+|---|---|
+| Report a bug or ask for a feature | [Open an issue](https://github.com/IvyMurage/otelstarter/issues/new/choose). The forms ask for what helps most |
+| Report a security problem | Privately, as in [SECURITY.md](SECURITY.md). Please not in a public issue |
+| Fix a typo or improve the docs | Edit the file on GitHub and open the pull request from there. No setup needed |
+| Support another library (Redis client, queue, ORM…) | [Adding a library](docs/adding-a-language.md#adding-a-library), usually two small edits and a test |
+| Support another language | [Adding a language](docs/adding-a-language.md#adding-a-language). Please open an issue first so we can agree on the approach |
+| Anything bigger | Open an issue first. A short discussion saves you time if the idea needs a different shape |
+
+New to the codebase? The [project guide](docs/PROJECT_GUIDE.md) explains what every file does, and the [engineering guidelines](docs/ENGINEERING_GUIDELINES.md) explain how we build. Using an AI assistant is fine; [section 2](docs/ENGINEERING_GUIDELINES.md#2-using-ai-coding-tools) covers what that means here.
+
+## Set up
+
+The project has three parts. Install only what you will touch:
+
+| Part | Folder | You need |
+|---|---|---|
+| The CLI | the repository root | [Go 1.25+](https://go.dev/dl/) |
+| The Node.js SDK | `sdk/node/` | Node.js 22.14+ |
+| The Python SDK | `sdk/python/` | Python 3.10+ |
 
 ```bash
-go build ./...                       # compile everything
-go run ./cmd/otelstarter help        # run the CLI without installing it
+git clone https://github.com/IvyMurage/otelstarter.git
+cd otelstarter
+go run ./cmd/otelstarter help        # the CLI, straight from the source
 ```
 
-## Before opening a pull request
+## Check your change
 
-Run all three checks. CI runs the same checks.
+Run the checks for the part you changed. CI runs the same ones, so passing locally means passing there.
 
+**The CLI (Go):**
 ```bash
-gofmt -l .                # lists badly formatted files; must print nothing
-go vet ./...              # catches common mistakes
-go test -race ./...       # runs the tests and checks for data races
+gofmt -l .              # lists badly formatted files; must print nothing (gofmt -w . fixes them)
+go vet ./...
+go test -race ./...
 ```
+Tests that start real Docker containers are skipped by default: `OTELSTARTER_DOCKER_TESTS=1 go test ./internal/localstack/`.
 
-`gofmt -w .` fixes formatting for you.
-
-Tests that start real Docker containers are skipped by default. Run them with:
-
+**The Node.js SDK:**
 ```bash
-OTELSTARTER_DOCKER_TESTS=1 go test ./internal/localstack/
+cd sdk/node
+npm ci
+npm test
 ```
 
-## Layout
+**The Python SDK** (in a virtual environment):
+```bash
+cd sdk/python
+python -m venv .venv && . .venv/bin/activate
+pip install -e '.[dev]'
+pytest && ruff check . && ruff format --check . && mypy
+```
 
-| Path | What lives there |
-|------|------------------|
-| `cmd/otelstarter/` | The `main` package. One line that calls `internal/cli`. |
-| `internal/cli/` | Argument parsing, command dispatch and output formatting. No business logic. |
-| `internal/project/` | Language-neutral description of an analysed project. |
-| `internal/detect/` | Finds which languages a project uses and calls their adapter. |
-| `internal/adapters/python/` | Reads Python manifests, recommends instrumentation, and knows how Python projects add packages. |
-| `internal/check/` | The checks behind `validate` and `doctor`. Read-only. |
-| `internal/localstack/` | The local Collector + Grafana stack for `run`. The only package that runs Docker. Its config files are in `files/` and embedded in the binary. |
-| `internal/setup/` | Builds and applies the file changes for `init`. The only package that writes to a user's project. |
-| `sdk/node/` | The Node.js SDK (TypeScript): loader, structured logger, redaction, query sanitising, domain events. `npm test` inside it; `RELEASING.md` covers publishing to npm. |
-| `sdk/python/` | The Python domain-event SDK that runs inside users' apps. Its own README covers development; `RELEASING.md` covers publishing to PyPI. |
-| `docs/` | Architecture, requirements, guidelines, ADRs. |
+**The compatibility check.** Run this when you change how the SDKs start, export or stop, or what `init` writes. It runs real Express, NestJS, Flask and FastAPI apps with and without otelstarter, and checks they behave the same. It needs Go, Node.js, Python and a Postgres:
+```bash
+docker run -d --rm --name compat-pg -e POSTGRES_PASSWORD=pw -p 127.0.0.1:5432:5432 postgres:16-alpine
+DATABASE_URL=postgres://postgres:pw@127.0.0.1:5432/postgres python3 compat/run.py
+```
+See [compat/README.md](compat/README.md). CI runs it on every pull request, so you can also leave it to CI.
 
-Go only allows code inside `internal/` to be imported by this module, so nothing there is a public API.
+## Open a pull request
 
-New packages are added when a feature needs them, not ahead of time. The planned order is in [docs/adr/0001-write-the-cli-in-go.md](docs/adr/0001-write-the-cli-in-go.md).
+1. Fork the repository, create a branch, and make **one** change. A fix and an unrelated refactor are two pull requests.
+2. Add or update tests for what you changed, and the docs if users will notice it.
+3. Add a line to `CHANGELOG.md` under `[Unreleased]` if users will notice the change.
+4. Open the pull request. The template asks a few short questions; answer the ones that apply, one sentence each is fine.
 
-## Tests
+**What happens next:**
+- **Your first pull request:** GitHub waits for me to approve the CI run. This is a safety rule for public repositories, not a judgement on your change. I approve within a day or two.
+- **CI** runs the Go tests, both SDKs on two versions each, the local-stack config check, and the compatibility check. If something fails, the log says which check and why. Ask in the pull request if it is unclear.
+- **Review:** I aim to reply within a few days. Suggestions are explained, and a "why not X?" from you is always welcome.
+- **When it is ready,** I merge it. Your change appears in the next release, and the release notes credit you.
 
-Tests live next to the code they test, in `*_test.go` files. That is the Go convention. Test behaviour (exit codes, output) rather than internals.
+Stuck at any point? Comment on the pull request or the issue. Asking is never a bother.
 
-## Releasing the CLI
+## Releasing (maintainers)
 
-Pushing a tag like `v0.2.0` runs `.github/workflows/release-cli.yml`:
+**The CLI:** pushing a tag like `v0.2.0` runs `.github/workflows/release-cli.yml`:
 1. it tests the CLI;
 2. it builds it for Linux, macOS and Windows (amd64 and arm64) with `.github/scripts/build-cli.sh`;
 3. it publishes a GitHub release with the archives, `checksums.txt` and notes generated from the merged pull requests.
 
-A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release.
-
-Before tagging:
-1. In `CHANGELOG.md`, rename `[Unreleased]` to the version and date, and start a new empty `[Unreleased]` above it. Merge that.
-2. Then tag the merged commit:
+A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release. Before tagging, rename `[Unreleased]` in `CHANGELOG.md` to the version and date, start a new empty `[Unreleased]` above it, and merge that. Then:
 
 ```bash
 git switch main && git pull
@@ -72,10 +101,12 @@ git log --oneline -1          # check it is the commit you mean
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
+Never move a `v*` tag after pushing it: Go's module proxy keeps every version forever. If a release is wrong, release the next version.
+
 To try the build locally: `.github/scripts/build-cli.sh v0.0.0-test dist`.
 
-The SDKs have their own release tags and workflows: `sdk/node/RELEASING.md` and `sdk/python/RELEASING.md`.
+**The SDKs** have their own tags and workflows: [sdk/node/RELEASING.md](sdk/node/RELEASING.md) and [sdk/python/RELEASING.md](sdk/python/RELEASING.md).
 
-## Pull requests
+## Code of conduct
 
-Keep each PR to one purpose. Answer the questions in section 37 of the engineering guidelines in the PR description.
+Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).

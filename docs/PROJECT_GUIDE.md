@@ -203,9 +203,10 @@ An Express shop app runs under `otelstarter run`. A customer calls `GET /orders/
 |---|---|
 | `README.md` | The front page on GitHub: what it is, install, commands, links |
 | `CHANGELOG.md` | Every user-visible change, newest first. New changes go under `[Unreleased]`; a CLI release renames that to the version, e.g. `[0.1.0]` |
-| `CONTRIBUTING.md` | How to build and test, the folder layout, PR rules |
+| `CONTRIBUTING.md` | The contributor's path: which kind of change starts where, setup and checks for each part, what happens after opening a pull request, and releasing (for maintainers) |
 | `LICENSE` | Apache-2.0. The SDK folders each have a copy, and CI checks the copies are identical |
 | `SECURITY.md` | How to report a vulnerability privately (GitHub's Security tab), and what otelstarter guarantees |
+| `CODE_OF_CONDUCT.md` | How people treat each other in the project, and how to report a problem |
 | `go.mod` / `go.sum` | The Go module name (`github.com/IvyMurage/otelstarter`), minimum Go 1.25, and the CLI's only dependency, `go-toml`, which reads `pyproject.toml`. `go.sum` holds its checksums. Everything else is Go's standard library |
 | `.gitignore` | Keeps build output, virtual environments, `node_modules` and `compat/.work/` out of git |
 
@@ -354,6 +355,8 @@ Every test app has the same routes: `/health`, `/orders/42` (SQL with an email i
 
 | File | What it is |
 |---|---|
+| `pull_request_template.md` | The short questions every pull request answers: what and why, how, checks, impact |
+| `ISSUE_TEMPLATE/` | The forms for new issues. A bug report asks for `otelstarter doctor` output; a feature request asks what problem it solves; security reports are pointed to the private channel |
 | `ci.yml` | Runs on every PR and every push to `main`:<br>• `test`: gofmt, go vet, go test -race, build<br>• `local-stack-config`: real Collector and Compose validate their configs<br>• `python-sdk`: Python 3.10 and 3.13: lint, type check, tests<br>• `node-sdk`: Node 22 and 24<br>• `compat`: the 8 real apps, with a Postgres service |
 | `release-python-sdk.yml` | Runs on a tag `sdk-python-v*`: checks the tag matches the version, tests, builds, publishes to PyPI. No password: PyPI trusts this workflow (environment `pypi`) |
 | `release-node-sdk.yml` | Runs on a tag `sdk-node-v*`: the same checks, then `npm publish` through npm's trusted publishing (environment `npm`) |
@@ -378,7 +381,8 @@ Every test app has the same routes: `/health`, `/orders/42` (SQL with an email i
 | `README_DOCS.md` | The reading order for contributors |
 | `ARCHITECTURE.md` | The intended system design and its boundaries |
 | `REQUIREMENTS.md` | What the product must do (the FR-xxx numbers referenced in code) |
-| `ENGINEERING_GUIDELINES.md` | The rules every change follows. Section 37 lists the questions each PR description answers |
+| `ENGINEERING_GUIDELINES.md` | How we build OTelStarter: the rules every change follows, including changes made with AI assistants |
+| `adding-a-language.md` | Step by step: adding support for a library (Node.js or Python), and adding a whole language |
 | `DOMAIN_EVENTS.md` | The business-event model: names, fields, what is allowed |
 | `PROJECT_GUIDE.md` | This page |
 
