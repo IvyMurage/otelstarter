@@ -6,6 +6,8 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ### Added
 
+- Python `analyze` detects `pymongo` as MongoDB and recommends the official `opentelemetry-instrumentation-pymongo` package.
+
 - `docs/PROJECT_GUIDE.md`: the whole project in plain English, including what every file does.
 - For contributors:
   - a rewritten `CONTRIBUTING.md`, with setup and checks for each part and what happens after a pull request;
