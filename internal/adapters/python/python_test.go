@@ -125,6 +125,37 @@ pika = "*"
 	}
 }
 
+func TestAnalyzePymongo(t *testing.T) {
+	got, err := Analyze(files(map[string]string{
+		"requirements.txt": "pymongo==4.10.0\n",
+	}))
+	if err != nil {
+		t.Fatalf("Analyze() error = %v", err)
+	}
+	if want := []project.Dependency{{Category: "MongoDB", Package: "pymongo"}}; !reflect.DeepEqual(got.Dependencies, want) {
+		t.Errorf("Dependencies = %v, want %v", got.Dependencies, want)
+	}
+	const instrumentation = "opentelemetry-instrumentation-pymongo"
+	var found bool
+	for _, rec := range got.Instrumentation {
+		if rec.Package == instrumentation {
+			found = true
+			if rec.Purpose != "Database queries (pymongo)" {
+				t.Errorf("Purpose = %q, want MongoDB database queries", rec.Purpose)
+			}
+			if rec.Installed {
+				t.Error("new instrumentation is marked installed")
+			}
+		}
+	}
+	if !found {
+		t.Errorf("recommended instrumentation does not include %q: %v", instrumentation, got.Instrumentation)
+	}
+	if want := instrumentation + "==0.66b0"; !hasNote(MissingRequirements(got), want) {
+		t.Errorf("MissingRequirements() does not include %q", want)
+	}
+}
+
 func TestAnalyzeSetupPyOnlyExplainsGap(t *testing.T) {
 	got, err := Analyze(files(map[string]string{"setup.py": "from setuptools import setup\n"}))
 	if err != nil {

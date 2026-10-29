@@ -22,6 +22,7 @@ var basePackages = []project.Instrumentation{
 }
 
 var categoryPurpose = map[string]string{
+	"MongoDB":     "Database queries",
 	"PostgreSQL":  "Database queries",
 	"MySQL":       "Database queries",
 	"Redis":       "Redis commands",

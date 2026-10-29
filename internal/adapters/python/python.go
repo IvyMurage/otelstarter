@@ -41,6 +41,7 @@ var knownPackages = map[string]knownPackage{
 	"fastapi":                {framework: "FastAPI", instrumentation: "opentelemetry-instrumentation-fastapi"},
 	"flask":                  {framework: "Flask", instrumentation: "opentelemetry-instrumentation-flask"},
 	"django":                 {framework: "Django", instrumentation: "opentelemetry-instrumentation-django"},
+	"pymongo":                {category: "MongoDB", instrumentation: "opentelemetry-instrumentation-pymongo"},
 	"psycopg":                {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg"},
 	"psycopg-binary":         {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg"},
 	"psycopg2":               {category: "PostgreSQL", instrumentation: "opentelemetry-instrumentation-psycopg2"},
