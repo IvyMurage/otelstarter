@@ -14,21 +14,31 @@ OTelStarter builds on OpenTelemetry's own instrumentations; it does not write it
 
 If none exists, the library can still be recognised, and `analyze` can explain the gap in a note, as it does for Fastify and Prisma.
 
-### Node.js: an example with `bullmq`
+### Node.js: an example with `socket.io`
 
 1. **Recognise it.** In `internal/adapters/node/node.go`, add an entry to `knownPackages`. The key is the npm name in `package.json`; `instrumentation` is the part after `@opentelemetry/instrumentation-`:
    ```go
-   "bullmq": {category: "Queue", instrumentation: "bullmq"},
+   "socket.io": {category: "WebSockets", instrumentation: "socket.io"},
    ```
-2. **Pin a tested version.** In `internal/adapters/node/setup.go`, add it to `pins`:
-   ```go
-   instrumentationPackage("bullmq"): "0.x.y",
-   ```
-   Choose a version whose `@opentelemetry/instrumentation` dependency matches the SDK's, so npm installs the shared core only once. Check with:
+2. **Pin a version that matches the SDK.** All instrumentations share one core package, `@opentelemetry/instrumentation`. Pick the version built on the same core as the SDK, so npm installs the core once. The newest release is not always the right one: when OpenTelemetry moves to a new core, the instrumentations move first.
+
+   Find the SDK's core version:
    ```bash
-   npm view @opentelemetry/instrumentation-bullmq@0.x.y dependencies
+   grep '"@opentelemetry/instrumentation"' sdk/node/package.json     # "~0.223.0"
    ```
-   and compare with `sdk/node/package.json`. Forget the pin and `TestEveryRecommendedPackageIsPinned` fails, so it cannot slip through.
+   Then list which core each instrumentation version needs, and take the newest that matches:
+   ```bash
+   for v in $(npm view @opentelemetry/instrumentation-socket.io versions --json | tr -d '[]",' | tail -5); do
+     echo "$v needs $(npm view @opentelemetry/instrumentation-socket.io@$v dependencies.@opentelemetry/instrumentation)"
+   done
+   # 0.70.0 needs ^0.223.0   <- this one
+   # 0.71.0 needs ^0.300.0
+   ```
+   Add it to `pins` in `internal/adapters/node/setup.go`:
+   ```go
+   instrumentationPackage("socket.io"): "0.70.0",
+   ```
+   Forget the pin and `TestEveryRecommendedPackageIsPinned` fails, so it cannot slip through.
 3. **If the instrumentation needs a companion package** to do its whole job, as winston needs `@opentelemetry/winston-transport` to send logs, add it to `companions` and pin it too.
 4. **Test it.** In `internal/adapters/node/node_test.go`, add a case showing `analyze` recommends the package for a `package.json` that uses the library. `TestAnalyzeExpressApp` is a good model.
 
