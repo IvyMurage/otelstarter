@@ -1,7 +1,7 @@
 import { trace } from '@opentelemetry/api';
 import type { Logger as PinoLogger } from 'pino';
 import { environmentName, serviceName } from './config';
-import { REDACTED, SENSITIVE_KEYS } from './redaction';
+import { redactValues } from './redaction';
 
 /**
  * Structured JSON logs, one line per entry, with the fields every log needs
@@ -44,9 +44,12 @@ function pinoLogger(): PinoLogger {
     base: undefined, // no pid/hostname: the resource attributes carry the host
     messageKey: 'message',
     timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
-    formatters: { level: (label) => ({ severity: label.toUpperCase() }) },
+    formatters: {
+      level: (label) => ({ severity: label.toUpperCase() }),
+      // Every field, at any depth, by the same word rules as spans (redaction.ts).
+      log: (fields) => redactValues(fields) as Record<string, unknown>,
+    },
     mixin: contextFields,
-    redact: { paths: redactPaths(), censor: REDACTED },
   });
   return instance;
 }
@@ -62,13 +65,6 @@ function contextFields(): Record<string, unknown> {
     fields.span_id = span.spanId;
   }
   return fields;
-}
-
-/** Sensitive keys at the top level and one level down, in pino's path syntax. */
-function redactPaths(): string[] {
-  return SENSITIVE_KEYS.flatMap((key) =>
-    /^[A-Za-z_]\w*$/.test(key) ? [key, `*.${key}`] : [`["${key}"]`, `*["${key}"]`],
-  );
 }
 
 function log(level: keyof Logger): LogMethod {

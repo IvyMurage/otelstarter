@@ -4,6 +4,15 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+### Security
+
+- Node.js SDK 0.1.5 and Python SDK 0.3.2 close redaction gaps found in an audit.
+  - **Names:** a field is now sensitive when one of its words is, so `client_secret`, `aws_secret_access_key`, `db_password`, `passwordHash`, `id_token`, `jwt`, `otp` and `session_id` are redacted. Before, only exact names such as `secret` were, and these reached the backend.
+  - **URLs:** a password in a URL (`https://user:pass@host`) is hidden.
+  - **SQL:** PostgreSQL `E'…'` and `$$…$$` strings, hex literals, and MySQL double-quoted strings in comparisons become `?`.
+  - **Logs:** the Node.js `logger` and the Python JSON logs redact fields at any depth, not only one level down.
+  - `init` pins `otelstarter@0.1.5` and `otelstarter==0.3.2`.
+
 ### Added
 
 - `docs/PROJECT_GUIDE.md`: the whole project in plain English, including what every file does.

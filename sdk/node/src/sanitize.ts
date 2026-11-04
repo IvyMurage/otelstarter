@@ -9,14 +9,27 @@
  * also turns every query into a unique string, which backends cannot group.
  */
 
+// PostgreSQL strings that the plain rule below would cut short: E'…' allows
+// backslash escapes (E'it\'s'), and $$…$$ or $tag$…$tag$ quote anything.
+const ESCAPE_STRING = /\b[Ee]'(?:[^'\\]|\\.|'')*'/g;
+const DOLLAR_STRING = /\$((?:[A-Za-z_]\w*)?)\$[\s\S]*?\$\1\$/g;
 const STRING_LITERAL = /'(?:[^']|'')*'/g;
+// MySQL also accepts "…" for strings. Elsewhere "…" quotes a name, which
+// ORMs use everywhere ("users"."email"), so only a "…" compared with
+// something is treated as a value.
+const QUOTED_VALUE = /(=|<>|!=|<=|>=|<|>|\bLIKE|\bILIKE)(\s*)"(?:[^"]|"")*"/gi;
+const HEX_LITERAL = /\b0x[0-9a-f]+\b/gi;
 const NUMBER_LITERAL = /(?<![\w$])-?\d+(?:\.\d+)?(?![\w$])/g;
 const VALUE_LIST = /\bIN\s*\(\s*\?(?:\s*,\s*\?)*\s*\)/gi;
 
 /** Replace string and number literals with ?, and collapse IN (?, ?, …) to IN (?). */
 export function sanitizeQuery(sql: string): string {
   return sql
+    .replace(ESCAPE_STRING, '?')
+    .replace(DOLLAR_STRING, '?')
     .replace(STRING_LITERAL, '?')
+    .replace(QUOTED_VALUE, '$1$2?')
+    .replace(HEX_LITERAL, '?')
     .replace(NUMBER_LITERAL, '?')
     .replace(VALUE_LIST, 'IN (?)');
 }

@@ -10,5 +10,5 @@
  */
 export { event, type EventFields } from './events';
 export { logger, type Logger } from './logger';
-export { isSensitiveKey, redactUrl, REDACTED, SENSITIVE_KEYS } from './redaction';
+export { isSensitiveKey, redactUrl, redactValues, REDACTED, SENSITIVE_KEYS, SENSITIVE_PAIRS, SENSITIVE_WORDS } from './redaction';
 export { querySummary, sanitizeQuery } from './sanitize';
