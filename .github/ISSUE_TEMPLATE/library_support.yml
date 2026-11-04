@@ -1,0 +1,49 @@
+name: Support a library or framework
+description: otelstarter does not recognise a library or framework your app uses.
+title: "Support <library> in <Node.js / Python> apps"
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Most of these are small changes, and [adding a library](https://github.com/IvyMurage/otelstarter/blob/main/docs/adding-a-language.md#adding-a-library) shows how, if you would like to build it yourself.
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - Node.js
+        - Python
+        - Go
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: library
+    attributes:
+      label: Library or framework
+      description: Its name as it appears in package.json, requirements.txt or pyproject.toml, and the version you use.
+      placeholder: "socket.io 4.8"
+    validations:
+      required: true
+  - type: textarea
+    id: usage
+    attributes:
+      label: How your app uses it
+      description: What should show up in traces, logs or metrics that does not today?
+      placeholder: Our WebSocket events do not appear in traces.
+    validations:
+      required: true
+  - type: input
+    id: instrumentation
+    attributes:
+      label: OpenTelemetry instrumentation, if you know one
+      description: For example @opentelemetry/instrumentation-socket.io, or opentelemetry-instrumentation-pymongo.
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to build it?
+      options:
+        - Yes, with some guidance
+        - Maybe
+        - No, just suggesting it

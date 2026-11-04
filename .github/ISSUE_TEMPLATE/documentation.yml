@@ -1,0 +1,23 @@
+name: Documentation
+description: Something in the docs is wrong, unclear or missing.
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page?
+      description: A link or file name, such as docs/init.md or the README.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+      description: Quote the confusing part if you can. What did you expect to find?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording, if you have one
+      description: Small fixes are also welcome as a pull request straight from GitHub's editor; no setup needed.
