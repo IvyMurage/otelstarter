@@ -1,26 +1,143 @@
 {
   "_about": "Shared test cases for docs/TELEMETRY_CONVENTIONS.md. Both SDK test suites read this file, so the Node.js and Python SDKs cannot drift apart.",
   "sanitize_query": [
-    ["SELECT * FROM users WHERE email = 'ann@shop.rw' AND age > 30", "SELECT * FROM users WHERE email = ? AND age > ?"],
-    ["SELECT * FROM t WHERE name = 'O''Brien'", "SELECT * FROM t WHERE name = ?"],
-    ["SELECT * FROM orders WHERE id IN (1, 2, 3)", "SELECT * FROM orders WHERE id IN (?)"],
-    ["SELECT * FROM t2 WHERE price > -1.5", "SELECT * FROM t2 WHERE price > ?"],
-    ["SELECT * FROM users WHERE id = $1", "SELECT * FROM users WHERE id = $1"],
-    ["SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> 'ann@shop.rw' AND 42 > 1", "SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> ? AND ? > ?"]
+    [
+      "SELECT * FROM users WHERE email = 'ann@shop.rw' AND age > 30",
+      "SELECT * FROM users WHERE email = ? AND age > ?"
+    ],
+    [
+      "SELECT * FROM t WHERE name = 'O''Brien'",
+      "SELECT * FROM t WHERE name = ?"
+    ],
+    [
+      "SELECT * FROM orders WHERE id IN (1, 2, 3)",
+      "SELECT * FROM orders WHERE id IN (?)"
+    ],
+    [
+      "SELECT * FROM t2 WHERE price > -1.5",
+      "SELECT * FROM t2 WHERE price > ?"
+    ],
+    [
+      "SELECT * FROM users WHERE id = $1",
+      "SELECT * FROM users WHERE id = $1"
+    ],
+    [
+      "SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> 'ann@shop.rw' AND 42 > 1",
+      "SELECT count(*) AS n FROM pg_catalog.pg_tables WHERE tablename <> ? AND ? > ?"
+    ],
+    [
+      "SELECT * FROM users WHERE email = \"ann@shop.rw\"",
+      "SELECT * FROM users WHERE email = ?"
+    ],
+    [
+      "SELECT \"users\".\"email\" FROM \"users\" WHERE \"users\".\"id\" = 7",
+      "SELECT \"users\".\"email\" FROM \"users\" WHERE \"users\".\"id\" = ?"
+    ],
+    [
+      "UPDATE users SET bio = E'it\\'s ann@shop.rw' WHERE id = 1",
+      "UPDATE users SET bio = ? WHERE id = ?"
+    ],
+    [
+      "SELECT $$ann@shop.rw$$, $tag$secret$tag$ FROM t WHERE id = $1",
+      "SELECT ?, ? FROM t WHERE id = $1"
+    ],
+    [
+      "SELECT * FROM blobs WHERE h = 0xDEADBEEF",
+      "SELECT * FROM blobs WHERE h = ?"
+    ],
+    [
+      "INSERT INTO users (email, pw) VALUES ('a@b.rw', 'x'), ('c@d.rw', 'y')",
+      "INSERT INTO users (email, pw) VALUES (?, ?), (?, ?)"
+    ]
   ],
   "query_summary": [
-    ["SELECT id FROM users WHERE email = 'x'", "SELECT users"],
-    ["insert into \"orders\" (id) values (1)", "INSERT orders"],
-    ["UPDATE stock SET n = n - 1", "UPDATE stock"],
-    ["BEGIN", null]
+    [
+      "SELECT id FROM users WHERE email = 'x'",
+      "SELECT users"
+    ],
+    [
+      "insert into \"orders\" (id) values (1)",
+      "INSERT orders"
+    ],
+    [
+      "UPDATE stock SET n = n - 1",
+      "UPDATE stock"
+    ],
+    [
+      "BEGIN",
+      null
+    ]
   ],
   "sensitive_keys": {
-    "yes": ["password", "Authorization", "accessToken", "access_token", "http.request.header.authorization", "x-api-key", "creditCard", "SSN"],
-    "no": ["orderId", "tokens_used", "http.method", "user", "passwordless_login_enabled"]
+    "yes": [
+      "password",
+      "Authorization",
+      "accessToken",
+      "access_token",
+      "http.request.header.authorization",
+      "x-api-key",
+      "creditCard",
+      "SSN",
+      "client_secret",
+      "clientSecret",
+      "aws_secret_access_key",
+      "secret_key",
+      "db_password",
+      "passwordHash",
+      "id_token",
+      "jwt",
+      "otp",
+      "session_id",
+      "sessionId",
+      "private-key",
+      "x-csrf-token",
+      "user.credentials",
+      "AWS_ACCESS_KEY_ID",
+      "pin"
+    ],
+    "no": [
+      "orderId",
+      "tokens_used",
+      "http.method",
+      "user",
+      "passwordless_login_enabled",
+      "secretary",
+      "keyboard",
+      "author",
+      "spinner",
+      "session_count",
+      "tokenizer",
+      "api_version"
+    ]
   },
   "redact_url": [
-    ["/reset?token=abc123&lang=en", "/reset?token=[REDACTED]&lang=en"],
-    ["https://x.rw/a?id=7", "https://x.rw/a?id=7"],
-    ["/cb?code=1&api_key=k&state=s", "/cb?code=1&api_key=[REDACTED]&state=s"]
+    [
+      "/reset?token=abc123&lang=en",
+      "/reset?token=[REDACTED]&lang=en"
+    ],
+    [
+      "https://x.rw/a?id=7",
+      "https://x.rw/a?id=7"
+    ],
+    [
+      "/cb?code=1&api_key=k&state=s",
+      "/cb?code=1&api_key=[REDACTED]&state=s"
+    ],
+    [
+      "https://ann:hunter2@db.example.com/x",
+      "https://[REDACTED]@db.example.com/x"
+    ],
+    [
+      "https://ghp_abc123@github.com/x.git",
+      "https://[REDACTED]@github.com/x.git"
+    ],
+    [
+      "/login?client_secret=s&redirect_uri=/home",
+      "/login?client_secret=[REDACTED]&redirect_uri=/home"
+    ],
+    [
+      "https://x.rw/a?q=100%25&id=1",
+      "https://x.rw/a?q=100%25&id=1"
+    ]
   ]
 }

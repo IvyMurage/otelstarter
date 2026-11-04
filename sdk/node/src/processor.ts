@@ -2,7 +2,7 @@ import type { Context } from '@opentelemetry/api';
 import type { AnyValue } from '@opentelemetry/api-logs';
 import type { LogRecordProcessor, ReadWriteLogRecord } from '@opentelemetry/sdk-logs';
 import type { ReadableSpan, Span, SpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { isSensitiveKey, redactUrl, REDACTED } from './redaction';
+import { isSensitiveKey, redactUrl, redactValues, REDACTED } from './redaction';
 import { sanitizeQuery } from './sanitize';
 
 const QUERY_ATTRIBUTES = new Set(['db.query.text', 'db.statement']);
@@ -71,10 +71,10 @@ export class PrivacyLogRecordProcessor implements LogRecordProcessor {
 
   onEmit(record: ReadWriteLogRecord, context?: Context): void {
     for (const [key, value] of Object.entries(record.attributes)) {
-      const cleaned = isSensitiveKey(key) ? REDACTED : cleanValue(value);
+      const cleaned = isSensitiveKey(key) ? REDACTED : redactValues(value);
       if (cleaned !== value) record.setAttribute(key, cleaned as AnyValue);
     }
-    const body = cleanValue(record.body);
+    const body = redactValues(record.body);
     if (body !== record.body) record.setBody(body as AnyValue);
     this.next.onEmit(record, context);
   }
@@ -86,23 +86,4 @@ export class PrivacyLogRecordProcessor implements LogRecordProcessor {
   shutdown(): Promise<void> {
     return this.next.shutdown();
   }
-}
-
-/**
- * Returns value with sensitive keys redacted in nested objects and arrays,
- * or value itself when nothing needed changing.
- */
-function cleanValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const items = value.map(cleanValue);
-    return items.some((item, i) => item !== value[i]) ? items : value;
-  }
-  if (value === null || typeof value !== 'object' || value instanceof Uint8Array) return value;
-  let changed = false;
-  const copy: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value)) {
-    copy[key] = isSensitiveKey(key) ? REDACTED : cleanValue(item);
-    changed ||= copy[key] !== item;
-  }
-  return changed ? copy : value;
 }

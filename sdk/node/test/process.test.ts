@@ -51,6 +51,19 @@ test('logger prints structured JSON with context fields and redaction', async ()
   assert.equal(line.user.apiKey, '[REDACTED]');
 });
 
+test('a self-referencing object is logged without crashing, and still redacted', async () => {
+  const { child, output } = run([], `
+    const { logger } = require(${JSON.stringify(index)});
+    const user = { name: 'ann', client_secret: 's3cret' };
+    user.self = user;
+    logger.info('loop', { user });
+    console.log('still running');`);
+  await once(child, 'exit');
+  assert.match(output(), /still running/);
+  const line = JSON.parse(output().split('\n').find((l) => l.startsWith('{'))!);
+  assert.equal(line.user.client_secret, '[REDACTED]');
+});
+
 test("pino's argument order keeps the fields", async () => {
   const { child, output } = run([], `
     const { logger } = require(${JSON.stringify(index)});

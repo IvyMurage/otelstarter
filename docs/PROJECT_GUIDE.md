@@ -103,7 +103,7 @@ observability.event("order.created", domain="orders", outcome="success", entity_
 ```bash
 otelstarter init
 # prints, for an Express + pg app:
-#   npm install --save-exact otelstarter@0.1.4 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0
+#   npm install --save-exact otelstarter@0.1.5 @opentelemetry/instrumentation-express@0.71.0 @opentelemetry/instrumentation-pg@0.75.0
 npm install --save-exact ...          # run what it printed
 otelstarter run -- npm start
 ```
@@ -252,7 +252,7 @@ Each adapter only **reads** files. It never runs pip, npm or the app, so analysi
 |---|---|
 | `python.go` | Reads `requirements.txt`, `pyproject.toml` (PEP 621 and Poetry) and `Pipfile`. Its table of known packages maps each library to its instrumentation, e.g. `flask` → `opentelemetry-instrumentation-flask`, `psycopg2-binary` → `…-psycopg2`, `redis`, `celery`, `httpx`… It works out the package manager from lock files and suggests a start command |
 | `instrumentation.go` | The recommendation: 5 base packages for every app (distro, HTTP exporter, logging, system metrics, the `otelstarter` SDK), plus one per detected library, marking those already installed |
-| `setup.go` | What `init` writes for Python:<br>• `EnvVars`: the Python lines of `otel.env`, including `OTEL_TRACES_EXPORTER=otelstarter`<br>• the pinned versions (`0.66b0` for instrumentation, `1.45.0` for the exporter, `otelstarterVersion = "0.3.1"`)<br>• the install command per package manager<br>• how `run` prefixes `opentelemetry-instrument` |
+| `setup.go` | What `init` writes for Python:<br>• `EnvVars`: the Python lines of `otel.env`, including `OTEL_TRACES_EXPORTER=otelstarter`<br>• the pinned versions (`0.66b0` for instrumentation, `1.45.0` for the exporter, `otelstarterVersion = "0.3.2"`)<br>• the install command per package manager<br>• how `run` prefixes `opentelemetry-instrument` |
 | `*_test.go` | Parsing tests for every manifest format. One test fails if `otelstarterVersion` differs from the Python SDK's `__version__` |
 
 **`adapters/node/`**
@@ -260,7 +260,7 @@ Each adapter only **reads** files. It never runs pip, npm or the app, so analysi
 | File | What it is |
 |---|---|
 | `node.go` | Reads `package.json`: frameworks (Express, NestJS, Koa, hapi, Fastify), libraries (pg, mysql, redis, ioredis, mongodb, kafkajs, amqplib, knex, graphql…), logging library, package manager from the lock file, `"type": "module"`. Produces `OTEL_NODE_ENABLED_INSTRUMENTATIONS` and the package list. Adds notes for gaps: Fastify, Prisma, `console.log`, and the old 80 MB bundle |
-| `setup.go` | The tested versions (`SDKVersion = "0.1.4"` plus one pin per instrumentation package), the install command for npm, yarn, pnpm or bun, and how `run` finds the loader. It prefers `otelstarter/register` and falls back to the old bundle's loader for older projects |
+| `setup.go` | The tested versions (`SDKVersion = "0.1.5"` plus one pin per instrumentation package), the install command for npm, yarn, pnpm or bun, and how `run` finds the loader. It prefers `otelstarter/register` and falls back to the old bundle's loader for older projects |
 | `*_test.go` | Tests. Two of them guard the data: every recognised library has a pinned version, and `SDKVersion` equals `sdk/node/package.json` |
 
 ### 6.7 `internal/setup/`: the only code that writes to a user's project

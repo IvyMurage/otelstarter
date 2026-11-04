@@ -98,7 +98,7 @@ flowchart TD
     L2 & M2 & T2 --> Backend[(Observability Backend)]
 ```
 
-### 3.2 As built today (CLI v0.1.0, Node.js SDK 0.1.4, Python SDK 0.3.1)
+### 3.2 As built today (CLI v0.1.0, Node.js SDK 0.1.5, Python SDK 0.3.2)
 
 ```mermaid
 flowchart TD

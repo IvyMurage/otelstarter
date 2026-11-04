@@ -44,14 +44,18 @@ def environment_name() -> str:
     return ""
 
 
-def _redact(value: Any, depth: int = 1) -> Any:
-    """Redact sensitive keys in a dict, and in dicts one level down."""
-    if not isinstance(value, dict):
+def _redact(value: Any, depth: int = 10) -> Any:
+    """Redact sensitive keys in dicts and lists, at any depth up to a limit
+    that stops self-referencing structures from recursing forever."""
+    if depth <= 0:
         return value
-    return {
-        key: REDACTED if is_sensitive_key(str(key)) else (_redact(item, depth - 1) if depth > 0 else item)
-        for key, item in value.items()
-    }
+    if isinstance(value, dict):
+        return {
+            key: REDACTED if is_sensitive_key(str(key)) else _redact(item, depth - 1) for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact(item, depth - 1) for item in value]
+    return value
 
 
 class JsonFormatter(logging.Formatter):
