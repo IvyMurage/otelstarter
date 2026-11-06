@@ -191,26 +191,12 @@ Heard nothing after a week? Please comment on the pull request. It has slipped p
 
 Stuck at any point? Comment on the pull request or the issue, or [ask in Discussions](https://github.com/IvyMurage/otelstarter/discussions/new?category=q-a).
 
-## Releasing (maintainers)
+## Reviewing and releasing
 
-**The CLI:** pushing a tag like `v0.2.0` runs `.github/workflows/release-cli.yml`:
-1. it tests the CLI;
-2. it builds it for Linux, macOS and Windows (amd64 and arm64) with `.github/scripts/build-cli.sh`;
-3. it publishes a GitHub release with the archives and `checksums.txt`. The notes are the version's section of `CHANGELOG.md`, followed by GitHub's list of merged pull requests and new contributors.
-
-A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release. Before tagging, rename `[Unreleased]` in `CHANGELOG.md` to the version and date (`## [0.2.0] - 2026-11-06`), start a new empty `[Unreleased]` above it, and merge that. The workflow refuses a release whose section is missing, before it builds anything. Then:
-
-```bash
-git switch main && git pull
-git log --oneline -1          # check it is the commit you mean
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-Never move a `v*` tag after pushing it: Go's module proxy keeps every version forever. If a release is wrong, release the next version.
-
-To try the build locally: `.github/scripts/build-cli.sh v0.0.0-test dist`.
-
-**The SDKs** have their own tags and workflows: [sdk/node/RELEASING.md](sdk/node/RELEASING.md) and [sdk/python/RELEASING.md](sdk/python/RELEASING.md).
+Guides for the people who review, merge and release, in [`docs/maintainers/`](docs/maintainers/):
+- [Reviewing and merging pull requests](docs/maintainers/reviewing.md)
+- [Releasing](docs/maintainers/releasing.md) the CLI and the SDKs
+- [Reviewers](docs/maintainers/reviewers.md): what reviewers do, and how to become one. Help is welcome.
 
 ## Code of conduct
 
