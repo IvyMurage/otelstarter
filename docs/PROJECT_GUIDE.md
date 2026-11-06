@@ -386,6 +386,9 @@ Every test app has the same routes: `/health`, `/orders/42` (SQL with an email i
 | `adding-a-language.md` | Step by step: adding support for a library (Node.js or Python), and adding a whole language |
 | `DOMAIN_EVENTS.md` | The business-event model: names, fields, what is allowed |
 | `PROJECT_GUIDE.md` | This page |
+| `maintainers/reviewing.md` | How to review a pull request: approving a first-time CI run safely, what to check, writing the review, saying no, and merging |
+| `maintainers/releasing.md` | How to release the CLI and the SDKs: tags, version numbers, checking a release, and what to do when one goes wrong |
+| `maintainers/reviewers.md` | The roles (triager, reviewer, owner), how to become a reviewer, and how the owner adds one safely |
 
 **`docs/adr/`: why things are the way they are**
 
