@@ -21,6 +21,7 @@ You do not need to understand the whole project to help. This page gets you from
 | You want to… | Start here |
 |---|---|
 | Report a bug or ask for a feature | [Open an issue](https://github.com/IvyMurage/otelstarter/issues/new/choose). The forms ask for what helps most |
+| Ask a question or talk through an idea | [Discussions](https://github.com/IvyMurage/otelstarter/discussions) |
 | Report a security problem | Privately, as in [SECURITY.md](SECURITY.md). Please not in a public issue |
 | Fix a typo or improve the docs | Edit the file on GitHub and open the pull request from there. No setup needed |
 | Support another library (Redis client, queue, ORM…) | [Adding a library](docs/adding-a-language.md#adding-a-library), usually two small edits and a test |
@@ -188,7 +189,7 @@ OTelStarter is maintained by one person, so these are honest targets, not guaran
 
 Heard nothing after a week? Please comment on the pull request. It has slipped past me, and a reminder is welcome, never a bother. Reviewers' suggestions are explained, and a "why not X?" from you is always welcome.
 
-Stuck at any point? Comment on the pull request or the issue, or [ask a question](https://github.com/IvyMurage/otelstarter/issues/new?template=question.yml).
+Stuck at any point? Comment on the pull request or the issue, or [ask in Discussions](https://github.com/IvyMurage/otelstarter/discussions/new?category=q-a).
 
 ## Releasing (maintainers)
 
