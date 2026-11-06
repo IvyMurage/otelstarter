@@ -65,7 +65,7 @@ The Collector check sends an **empty** export request (`{}`) for each signal. A 
 
 ```text
 Environment (secrets are hidden, so this is safe to paste into a bug report):
-  otelstarter:               v0.1.0
+  otelstarter:               v0.2.0
   Go runtime:                go1.27.1
   OS:                        linux/amd64
   Docker:                    29.8.2
