@@ -4,6 +4,13 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-06
+
+A security release: `init` now installs SDKs that redact more secrets. `init` does not change a pin that is already there, so in a project set up with v0.1.0, update the SDK yourself:
+
+- Node.js: `npm install --save-exact otelstarter@0.1.5`
+- Python: change the pin to `otelstarter==0.3.2` and reinstall. `otelstarter validate` warns while the old pin is there.
+
 ### Security
 
 - Node.js SDK 0.1.5 and Python SDK 0.3.2 close redaction gaps found in an audit.
@@ -19,7 +26,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - For contributors:
   - a rewritten `CONTRIBUTING.md`, with setup and checks for each part and what happens after a pull request;
   - `docs/adding-a-language.md`;
-  - pull request and issue templates;
+  - pull request and issue templates, with questions and ideas sent to [Discussions](https://github.com/IvyMurage/otelstarter/discussions);
   - `CODE_OF_CONDUCT.md`.
 
   The engineering guidelines now speak to every contributor, with a section on using AI assistants.
