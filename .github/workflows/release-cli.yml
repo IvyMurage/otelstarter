@@ -2,6 +2,8 @@ name: Release CLI
 
 # Pushing a tag like v0.1.0 tests the CLI, builds it for Linux, macOS and
 # Windows, and publishes a GitHub release with the archives and checksums.
+# The release notes are the version's section of CHANGELOG.md, followed by
+# GitHub's list of merged pull requests and new contributors.
 # SDK tags (sdk-node-v*, sdk-python-v*) do not match "v*".
 on:
   push:
@@ -25,6 +27,23 @@ jobs:
         run: |
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] \
             || { echo "Tag $GITHUB_REF_NAME is not a version such as v0.1.0"; exit 1; }
+      - name: Take the release notes from CHANGELOG.md
+        # The lines under "## [0.2.0]" for tag v0.2.0, up to the next "## ".
+        # A release must have its section, so the notes are never empty; a
+        # pre-release such as v0.2.0-rc.1 may go out without one.
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { on = 1; next }
+            on && /^## / { exit }
+            on && !/^\[[^]]+\]: / { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > notes.md
+          if [[ ! -s notes.md && "$GITHUB_REF_NAME" != *-* ]]; then
+            # Fails before anything is built or published. v* tags are never
+            # moved (Go's module proxy keeps them), so the fix is the next version.
+            echo "::error::CHANGELOG.md has no '## [$version]' section, so nothing was released. Rename [Unreleased] to the next version, merge that, and tag that version."
+            exit 1
+          fi
       - name: Test
         run: go test ./...
       - name: Build
@@ -36,5 +55,6 @@ jobs:
           # A tag with a suffix, such as v0.2.0-rc.1, is marked as a pre-release.
           prerelease=()
           [[ "$GITHUB_REF_NAME" == *-* ]] && prerelease=(--prerelease)
+          # --generate-notes appends GitHub's pull request list after notes.md.
           gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "otelstarter $GITHUB_REF_NAME" --generate-notes "${prerelease[@]}"
+            --title "otelstarter $GITHUB_REF_NAME" --notes-file notes.md --generate-notes "${prerelease[@]}"
