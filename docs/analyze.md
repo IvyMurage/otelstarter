@@ -69,7 +69,7 @@ Python details:
 - **Manifests read:** `[project].dependencies` and `[tool.poetry.dependencies]` in `pyproject.toml`, `requirements.txt`, and `[packages]` in `Pipfile`.
 - **Package manager:** taken from the lock file (`uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock`), else from the manifest.
 - **Frameworks:** FastAPI, Flask, Django.
-- **Dependencies:** PostgreSQL, MySQL, Redis, Kafka, RabbitMQ, HTTP clients, ORMs, Celery. The full list is in `internal/adapters/python/python.go`.
+- **Dependencies:** PostgreSQL, MySQL, MongoDB, Redis, Kafka, RabbitMQ, HTTP clients, ORMs, Celery. The full list is in `internal/adapters/python/python.go`.
 
 Node.js details:
 
