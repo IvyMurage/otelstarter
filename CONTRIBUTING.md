@@ -196,9 +196,9 @@ Stuck at any point? Comment on the pull request or the issue, or [ask in Discuss
 **The CLI:** pushing a tag like `v0.2.0` runs `.github/workflows/release-cli.yml`:
 1. it tests the CLI;
 2. it builds it for Linux, macOS and Windows (amd64 and arm64) with `.github/scripts/build-cli.sh`;
-3. it publishes a GitHub release with the archives, `checksums.txt` and notes generated from the merged pull requests.
+3. it publishes a GitHub release with the archives and `checksums.txt`. The notes are the version's section of `CHANGELOG.md`, followed by GitHub's list of merged pull requests and new contributors.
 
-A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release. Before tagging, rename `[Unreleased]` in `CHANGELOG.md` to the version and date, start a new empty `[Unreleased]` above it, and merge that. Then:
+A tag with a suffix, such as `v0.2.0-rc.1`, becomes a pre-release. Before tagging, rename `[Unreleased]` in `CHANGELOG.md` to the version and date (`## [0.2.0] - 2026-11-06`), start a new empty `[Unreleased]` above it, and merge that. The workflow refuses a release whose section is missing, before it builds anything. Then:
 
 ```bash
 git switch main && git pull
