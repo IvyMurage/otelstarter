@@ -356,7 +356,7 @@ Every test app has the same routes: `/health`, `/orders/42` (SQL with an email i
 | File | What it is |
 |---|---|
 | `pull_request_template.md` | The short questions every pull request answers: what and why, how, checks, impact |
-| `ISSUE_TEMPLATE/` | The forms for new issues:<br>• **bug report:** asks for `otelstarter doctor` output<br>• **documentation**<br>• **feature request:** asks what problem it solves<br>• **support a library or framework:** asks for the language, the library and how the app uses it<br>• **question**<br><br>`config.yml` points security reports to the private channel |
+| `ISSUE_TEMPLATE/` | The forms for new issues:<br>• **bug report:** asks for `otelstarter doctor` output<br>• **documentation**<br>• **feature request:** asks what problem it solves<br>• **support a library or framework:** asks for the language, the library and how the app uses it<br><br>`config.yml` turns off blank issues, sends questions and early ideas to Discussions, and security reports to the private channel |
 | `CODEOWNERS` | Makes GitHub ask the maintainer to review every pull request automatically |
 | `ci.yml` | Runs on every PR and every push to `main`:<br>• `test`: gofmt, go vet, go test -race, build<br>• `local-stack-config`: real Collector and Compose validate their configs<br>• `python-sdk`: Python 3.10 and 3.13: lint, type check, tests<br>• `node-sdk`: Node 22 and 24<br>• `compat`: the 8 real apps, with a Postgres service |
 | `release-python-sdk.yml` | Runs on a tag `sdk-python-v*`: checks the tag matches the version, tests, builds, publishes to PyPI. No password: PyPI trusts this workflow (environment `pypi`) |

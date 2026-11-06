@@ -1,5 +1,11 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Ask a question
+    url: https://github.com/IvyMurage/otelstarter/discussions/new?category=q-a
+    about: How do I…? Is this expected? Ask in Discussions, where answers stay searchable for the next person.
+  - name: Share an idea
+    url: https://github.com/IvyMurage/otelstarter/discussions/new?category=ideas
+    about: Not sure it is a feature request yet? Talk it through in Discussions first.
   - name: Report a security problem privately
     url: https://github.com/IvyMurage/otelstarter/security/advisories/new
     about: Please do not open a public issue for security problems.
