@@ -9,6 +9,35 @@ description = "Lightweight OpenTelemetry helpers for Python: structured JSON log
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
+keywords = [
+    "opentelemetry",
+    "otel",
+    "observability",
+    "tracing",
+    "metrics",
+    "logging",
+    "instrumentation",
+    "flask",
+    "fastapi",
+    "django",
+    "redaction",
+    "apm",
+    "monitoring",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Framework :: Django",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Topic :: System :: Logging",
+    "Topic :: System :: Monitoring",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 # Only the API: an app without OpenTelemetry configured gets a no-op, and the
 # app chooses the SDK version. 1.45.0 is the version otelstarter tests with.
 dependencies = ["opentelemetry-api>=1.45.0"]
@@ -37,6 +66,10 @@ otelstarter = "otelstarter.instrumentor:OtelStarterInstrumentor"
 
 [project.urls]
 Homepage = "https://github.com/IvyMurage/otelstarter"
+Documentation = "https://github.com/IvyMurage/otelstarter/tree/main/docs"
+Changelog = "https://github.com/IvyMurage/otelstarter/blob/main/CHANGELOG.md"
+Issues = "https://github.com/IvyMurage/otelstarter/issues"
+Source = "https://github.com/IvyMurage/otelstarter/tree/main/sdk/python"
 
 [tool.hatch.version]
 path = "src/otelstarter/__init__.py"
