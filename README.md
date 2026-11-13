@@ -1,6 +1,6 @@
 # OTelStarter
 
-OTelStarter is a command-line tool that adds production-quality observability to an existing application: structured logs, metrics, traces, correlation between them, and business-aware domain events.
+Add OpenTelemetry tracing, metrics and logs to a Node.js or Python app in minutes. OTelStarter is a command-line tool that detects your framework (Express, NestJS, Flask, FastAPI, Django), installs only the instrumentation it needs, and redacts secrets before anything leaves your app. You get production-quality observability: structured logs, metrics, traces, correlation between them, and business-aware domain events.
 
 It is a thin layer around [OpenTelemetry](https://opentelemetry.io/), not an observability backend. Your application emits standard OpenTelemetry data and you choose where it goes.
 
